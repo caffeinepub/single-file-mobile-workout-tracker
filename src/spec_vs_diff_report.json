@@ -1,0 +1,38 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-06T19:03:30.549Z",
+  "summary": "The diff shows modifications to backend/main.mo (truncated, not including generateLowerBodyWorkout()) and project_state.json. There is no evidence of the required frontend UI change, and the backend requirements cannot be verified from the truncated snippet.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "In backend/main.mo, update generateLowerBodyWorkout() to (1) replace the note decision tree with the specified 4-branch logic and exact strings, (2) remove the first/duplicate early-return empty check block, and (3) change the limited-workout threshold from <=2 to <=3.",
+      "reason": "The provided backend/main.mo diff excerpt is truncated and does not include generateLowerBodyWorkout() or any of the specified logic blocks/strings/thresholds, so there is no evidence these changes were implemented.",
+      "evidence": [
+        "backend/main.mo (truncated in diff summary)"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Update the frontend lower-body workout rendering component to conditionally render a \"Core\" subsection after leg groups when Core exercises exist, inserting the exact JSX provided by the user.",
+      "reason": "No frontend files were modified in the diff; only backend/main.mo and project_state.json changed.",
+      "evidence": [
+        "file-diff summary: Modified files list includes only backend/main.mo and project_state.json"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Added/updated project tracking metadata in project_state.json describing backend/frontend work items (AR-1..AR-4) and summaries.",
+      "reason": "The BuildRequest only requested backend/main.mo logic fixes and a frontend rendering change; it did not request modifying project_state.json or adding project-management entries.",
+      "evidence": [
+        "project_state.json"
+      ]
+    }
+  ],
+  "confidence": 0.72,
+  "changed_files": [
+    "backend/main.mo",
+    "project_state.json"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Implement and fix the Lower Body workout feature: correct backend note logic in generateLowerBodyWorkout() (remove duplicate empty checks, adjust threshold to <=3, match specified 4-case note logic) and update the frontend Lower Body workout UI to render a Core subsection after leg groups when Core exercises are present.",
+  "architectural_notes": [
+    "Lower Body workout generation logic depends on cappedExercises.size() and total/final leg exercise counts to produce user-facing note strings; note logic must match a strict 4-branch specification.",
+    "Frontend Lower Body workout rendering must group exercises by primaryMuscleGroup and explicitly include a conditional Core section after leg subgroups."
+  ],
+  "known_issues": [
+    "Backend generateLowerBodyWorkout() currently has incorrect note logic (wrong strings/branches), duplicate empty checks, and uses <=2 instead of <=3 for limited-workout threshold.",
+    "Frontend Lower Body workout UI currently does not display Core exercises; requires a conditional Core subsection after leg groups."
+  ],
+  "isFixRequest": true,
+  "existing_features": [],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Backend: Fix generateLowerBodyWorkout() note logic to exactly match the specified 4-case logic; remove duplicate empty check block; change limited threshold from <=2 to <=3.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Frontend: Update Lower Body workout UI component to render a Core subsection (only when Core exercises exist), placed after leg groups, using the provided JSX structure.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-3",
+      "summary": "In backend/main.mo, update generateLowerBodyWorkout() to fix the three specified logic errors: (1) replace the note decision tree to match the user-provided 4-branch logic exactly (including the exact English strings), (2) remove the first/duplicate early-return empty check block (the one described as being at lines 511–520 in the current file), and (3) change the limited-workout threshold from cappedExercises.size() <= 2 to cappedExercises.size() <= 3.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Update the frontend lower-body workout rendering component to display Core exercises by adding a conditional \"Core\" subsection AFTER the leg groups (Quads, Hamstrings, Glutes, Calves) when workout.exercises contains any exercises whose exercise.primaryMuscleGroup is \"Core\". Insert the JSX exactly as provided by the user.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Fix lower-body workout note logic and render Core subsection in lower-body UI",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

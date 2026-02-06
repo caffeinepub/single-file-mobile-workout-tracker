@@ -1,0 +1,23 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Render Core subsection in lower-body workout UI",
+  "requirements": [
+    {
+      "id": "REQ-2",
+      "summary": "Update the lower-body workout rendering to conditionally show a Core subsection after leg groups when any exercises have primaryMuscleGroup === \"Core\", using the exact user-provided JSX.",
+      "acceptanceCriteria": [
+        "When viewing a generated lower-body workout that includes Core exercises, a \"Core\" subsection renders after the leg subgroups and lists only Core exercises.",
+        "When a lower-body workout contains no Core exercises, the Core subsection does not render.",
+        "The inserted JSX matches the user-provided structure exactly (same condition, classNames, headings, mapping structure, and displayed fields)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "operation": "modify",
+          "description": "In the lower-body workout rendering section (after the existing leg subgroup sections: Quads, Hamstrings, Glutes, Calves), insert the user-provided conditional JSX block verbatim to render a \"Core\" subsection when any exercise has exercise.primaryMuscleGroup === \"Core\". If needed to match the snippet exactly, adjust local variable naming (without changing behavior) so the snippet can reference `workout?.exercises` and `workout.exercises` while still using the existing generated workout data."
+        }
+      ]
+    }
+  ]
+}
