@@ -249,9 +249,6 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     debugGetExerciseCounts(): Promise<Array<[string, bigint]>>;
     generateFullBodyWorkout(): Promise<Result_7>;
-    /**
-     * / unified check for empty and core-only workouts after all groups built
-     */
     generateLowerBodyWorkout(): Promise<Result_7>;
     generateUpperBodyWorkout(): Promise<Result_7>;
     getAlternativeExercises(muscleGroup: string): Promise<Result_6>;

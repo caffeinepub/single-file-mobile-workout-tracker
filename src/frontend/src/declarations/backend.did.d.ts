@@ -108,9 +108,6 @@ export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'debugGetExerciseCounts' : ActorMethod<[], Array<[string, bigint]>>,
   'generateFullBodyWorkout' : ActorMethod<[], Result_7>,
-  /**
-   * / unified check for empty and core-only workouts after all groups built
-   */
   'generateLowerBodyWorkout' : ActorMethod<[], Result_7>,
   'generateUpperBodyWorkout' : ActorMethod<[], Result_7>,
   'getAlternativeExercises' : ActorMethod<[string], Result_6>,

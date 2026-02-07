@@ -1,58 +1,72 @@
 {
   "kind": "build_request",
-  "title": "Fix lower-body workout note logic and render Core subsection in lower-body UI",
-  "priority": "high",
+  "title": "Backend: Fix lower-body workout note logic and remove duplicate empty-check",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "In backend/main.mo, update generateLowerBodyWorkout() to fix the three specified logic errors: (1) replace the note decision tree to match the user-provided 4-branch logic exactly (including the exact English strings), (2) remove the first/duplicate early-return empty check block (the one described as being at lines 511–520 in the current file), and (3) change the limited-workout threshold from cappedExercises.size() <= 2 to cappedExercises.size() <= 3.",
+      "id": "REQ-4",
+      "text": "In backend/main.mo, update generateLowerBodyWorkout() so the user-facing note logic matches exactly this 4-branch decision tree and strings:\n- If cappedExercises.size() == 0: \"All lower muscle groups recovering\"\n- Else if totalLegCount == 0: \"Core-focused session (leg subgroups recovering)\"\n- Else if cappedExercises.size() <= 3: \"Limited exercises due to muscle recovery\"\n- Else: \"Full lower-body workout\"\nDo not change any other wording.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
+          "msg-4",
+          "msg-6"
         ],
         "quotes": [
-          "FIX THESE THREE ERRORS and add the frontend Core section.",
-          "Should be EXACTLY:\nlet note = if (cappedExercises.size() == 0) {\n  \"All lower muscle groups recovering\"\n} else if (finalLegCount == 0) {\n  \"Core-focused session (leg subgroups recovering)\"\n} else if (cappedExercises.size() <= 3) {\n  \"Limited exercises due to muscle recovery\"\n} else {\n  \"Full lower-body workout\"\n};",
-          "You have TWO empty checks - remove the first one (lines 511-520):\nif (totalExerciseCount == 0) {  // <-- DELETE THIS ENTIRE BLOCK\n  return #ok({\n    exercises = [];\n    timestamp = Time.now();\n    totalVolume = 0.0;\n    note = \"All lower muscle groups recovering\";\n  });\n};",
-          "Change: cappedExercises.size() <= 2 → cappedExercises.size() <= 3"
+          "Fix note logic to match exactly:\n   let note = if (cappedExercises.size() == 0) {\n     \"All lower muscle groups recovering\"\n   } else if (totalLegCount == 0) {\n     \"Core-focused session (leg subgroups recovering)\"\n   } else if (cappedExercises.size() <= 3) {\n     \"Limited exercises due to muscle recovery\"\n   } else {\n     \"Full lower-body workout\"\n   };",
+          "Apply ONLY these two changes. No build."
         ]
       },
       "acceptanceCriteria": [
-        "generateLowerBodyWorkout() no longer contains the earlier/first empty-workout return block described by the user (the duplicate empty check).",
-        "The note logic in generateLowerBodyWorkout() is exactly:\n- if cappedExercises.size() == 0 => \"All lower muscle groups recovering\"\n- else if finalLegCount == 0 => \"Core-focused session (leg subgroups recovering)\"\n- else if cappedExercises.size() <= 3 => \"Limited exercises due to muscle recovery\"\n- else => \"Full lower-body workout\"",
-        "The limited threshold comparison uses <= 3 (not <= 2) anywhere this note logic is applied."
+        "Lower-body workout generation returns a note value that is exactly one of the four specified strings, selected by the exact branch order/conditions above.",
+        "The branch conditions use cappedExercises.size() and totalLegCount exactly as specified (including the <= 3 threshold in the note decision tree)."
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "Update the frontend lower-body workout rendering component to display Core exercises by adding a conditional \"Core\" subsection AFTER the leg groups (Quads, Hamstrings, Glutes, Calves) when workout.exercises contains any exercises whose exercise.primaryMuscleGroup is \"Core\". Insert the JSX exactly as provided by the user.",
-      "target": "frontend",
+      "id": "REQ-5",
+      "text": "In backend/main.mo, within generateLowerBodyWorkout(), remove the first/duplicate early-return empty-check block that checks totalExerciseCount == 0. Preserve the remaining logic and behavior aside from removing that duplicated empty check.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-user-latest"
+          "msg-4",
+          "msg-6"
         ],
         "quotes": [
-          "FRONTEND FIX:\nCore exercises still don't show because frontend needs Core subsection.\n\nFind the Lower Body workout UI component and add this AFTER leg groups:\n{workout?.exercises?.some(ex => ex.exercise.primaryMuscleGroup === \"Core\") && (\n  <div className=\"exercise-group core\">\n    <h3>Core</h3>\n    <div className=\"exercise-list\">\n      {workout.exercises.filter(ex => ex.exercise.primaryMuscleGroup === \"Core\").map((we, i) => (\n        <div key={i} className=\"exercise-item\">\n          <h4>{we.exercise.name}</h4>\n          <p>{we.sets} sets × {we.reps} reps</p>\n        </div>\n      ))}\n    </div>\n  </div>\n)}"
+          "Remove the first empty check block (if (totalExerciseCount == 0))",
+          "Apply ONLY these two changes. No build."
         ]
       },
       "acceptanceCriteria": [
-        "When viewing a generated lower-body workout that includes Core exercises, a \"Core\" subsection renders after the leg subgroups and lists only Core exercises.",
-        "When a lower-body workout contains no Core exercises, the Core subsection does not render.",
-        "The inserted JSX matches the user-provided structure exactly (same condition, classNames, headings, mapping structure, and displayed fields)."
+        "generateLowerBodyWorkout() no longer contains the initial duplicated conditional block that returns early when totalExerciseCount == 0.",
+        "No other logic changes are introduced besides the note decision tree update (REQ-4) and this removal."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; do not introduce additional backend services or languages.",
-    "Do not edit files in frontend immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui/*)."
+    "Apply ONLY the two requested changes inside generateLowerBodyWorkout() (note decision tree rewrite + remove the first/duplicate totalExerciseCount==0 empty check).",
+    "Do not modify getExerciseCountForGroup(), TEST_RECOVERY_MODE behavior, stable storage, types, or any other backend logic.",
+    "No frontend changes.",
+    "Do not add a migration (state schema is unchanged).",
+    "Use English for user-facing strings exactly as provided."
   ],
   "nonGoals": [
-    "Do not change workout generation behavior beyond the three specified backend fixes (note logic, removing the duplicate empty check, and the <=3 threshold change).",
-    "Do not redesign the workout preview/session UI beyond adding the Core subsection as requested."
+    "Fixing leg exercise visibility issues in Full Body/Lower Body workouts beyond these two generateLowerBodyWorkout() cleanups.",
+    "Changing any thresholds or selection logic outside the specified note logic update.",
+    "Turning off test recovery mode.",
+    "Any UI/JSX changes to render Core sections on the frontend."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

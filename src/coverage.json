@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-06T19:03:30.551Z",
+  "generatedAt": "2026-02-07T21:57:50.738Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,19 +11,17 @@
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "In backend/main.mo, update generateLowerBodyWorkout() to fix the three specified logic errors: (1) replace the note decision tree to match the user-provided 4-branch logic exactly (including the exact English strings), (2) remove the first/duplicate early-return empty check block (the one described as being at lines 511–520 in the current file), and (3) change the limited-workout threshold from cappedExercises.size() <= 2 to cappedExercises.size() <= 3.",
+        "id": "REQ-4",
+        "summary": "In backend/main.mo, update generateLowerBodyWorkout() so the user-facing note logic matches exactly this 4-branch decision tree and strings:\n- If cappedExercises.size() == 0: \"All lower muscle groups recovering\"\n- Else if totalLegCount == 0: \"Core-focused session (leg subgroups recovering)\"\n- Else if cappedExercises.size() <= 3: \"Limited exercises due to muscle recovery\"\n- Else: \"Full lower-body workout\"\nDo not change any other wording.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-2",
-        "summary": "Update the frontend lower-body workout rendering component to display Core exercises by adding a conditional \"Core\" subsection AFTER the leg groups (Quads, Hamstrings, Glutes, Calves) when workout.exercises contains any exercises whose exercise.primaryMuscleGroup is \"Core\". Insert the JSX exactly as provided by the user.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/pages/WorkoutPreviewPage.tsx"
-        ],
+        "id": "REQ-5",
+        "summary": "In backend/main.mo, within generateLowerBodyWorkout(), remove the first/duplicate early-return empty-check block that checks totalExerciseCount == 0. Preserve the remaining logic and behavior aside from removing that duplicated empty check.",
+        "status": "unknown",
+        "plannedFiles": [],
         "matchedFiles": []
       }
     ]
@@ -33,6 +31,9 @@
     "build-request.json",
     "feature_evidence.json",
     "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

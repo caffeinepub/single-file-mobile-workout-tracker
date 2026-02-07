@@ -1,10 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Fix lower-body workout note logic in the backend and ensure Core exercises render in the lower-body workout UI.
+**Goal:** Fix lower-body workout note messaging and remove a duplicated empty-check in `generateLowerBodyWorkout()`.
 
 **Planned changes:**
-- Update `generateLowerBodyWorkout()` in `backend/main.mo` to use the exact 4-branch note decision tree (with the exact English strings), remove the earlier duplicate empty-workout early-return block, and change the limited-workout threshold to `cappedExercises.size() <= 3`.
-- Update the frontend lower-body workout rendering component to conditionally render a "Core" subsection after the leg subgroups when any exercises have `exercise.primaryMuscleGroup === "Core"`, inserting the provided JSX exactly.
+- Update `backend/main.mo` `generateLowerBodyWorkout()` to use the exact 4-branch note decision tree and strings based on `cappedExercises.size()` and `totalLegCount`.
+- Remove the first/duplicate early-return empty-check block in `generateLowerBodyWorkout()` that checks `totalExerciseCount == 0`, keeping remaining logic unchanged.
 
-**User-visible outcome:** Lower-body workouts display the correct note text based on recovery/exercise availability, and Core exercises (when present) appear in a dedicated "Core" section after the leg groups.
+**User-visible outcome:** Lower-body workout generation shows the correct, consistent note text (one of four exact messages) and avoids duplicated empty-check behavior.

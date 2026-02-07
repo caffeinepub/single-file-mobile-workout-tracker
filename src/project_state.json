@@ -1,14 +1,17 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "Implement and fix the Lower Body workout feature: correct backend note logic in generateLowerBodyWorkout() (remove duplicate empty checks, adjust threshold to <=3, match specified 4-case note logic) and update the frontend Lower Body workout UI to render a Core subsection after leg groups when Core exercises are present.",
+  "projectStateVersion": 7,
+  "summary": "Fix workout exercise visibility/regression in Version 342: leg exercises missing in Full Body and Lower Body workouts. Apply a targeted backend change to getExerciseCountForGroup() recovery thresholds so Quads/Hamstrings/Glutes/Calves allow at least 1 exercise at >=30% recovery (Core unchanged) to restore leg selection/display.",
   "architectural_notes": [
     "Lower Body workout generation logic depends on cappedExercises.size() and total/final leg exercise counts to produce user-facing note strings; note logic must match a strict 4-branch specification.",
-    "Frontend Lower Body workout rendering must group exercises by primaryMuscleGroup and explicitly include a conditional Core section after leg subgroups."
+    "Frontend Lower Body workout rendering must group exercises by primaryMuscleGroup and explicitly include a conditional Core section after leg subgroups.",
+    "Leg exercise availability depends on getExerciseCountForGroup() recovery thresholds; for Quads/Hamstrings/Glutes/Calves, thresholds must allow at least 1 exercise when recovery >=30% (Core unchanged) to prevent legs from being filtered out entirely.",
+    "Lower Body workout note strings must exactly match the agreed 4-branch wording and decision order; remove redundant early empty-check (totalExerciseCount == 0) so emptiness is handled solely via cappedExercises.size() == 0 in the note logic."
   ],
   "known_issues": [
     "Backend generateLowerBodyWorkout() currently has incorrect note logic (wrong strings/branches), duplicate empty checks, and uses <=2 instead of <=3 for limited-workout threshold.",
-    "Frontend Lower Body workout UI currently does not display Core exercises; requires a conditional Core subsection after leg groups."
+    "Frontend Lower Body workout UI currently does not display Core exercises; requires a conditional Core subsection after leg groups.",
+    "Version 342: Leg exercises are not appearing in Full Body and Lower Body workouts, likely due to overly strict recovery thresholds in getExerciseCountForGroup() for leg muscle groups (Quads/Hamstrings/Glutes/Calves)."
   ],
   "isFixRequest": true,
   "existing_features": [],
@@ -38,6 +41,42 @@
       "summary": "Update the frontend lower-body workout rendering component to display Core exercises by adding a conditional \"Core\" subsection AFTER the leg groups (Quads, Hamstrings, Glutes, Calves) when workout.exercises contains any exercises whose exercise.primaryMuscleGroup is \"Core\". Insert the JSX exactly as provided by the user.",
       "reqIds": [
         "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Backend: In getExerciseCountForGroup(), adjust recovery thresholds for Quads, Hamstrings, Glutes, Calves so >=30% recovery returns at least 1 exercise per group (leave Core logic unchanged). Apply only this change to fix legs not appearing in Full Body and Lower Body workouts.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-6",
+      "summary": "In backend/main.mo, update getExerciseCountForGroup() recovery thresholds for leg subgroups (Quads, Hamstrings, Glutes, Calves) so that recoveryPercentage >= 30.0 returns at least 1 exercise for that subgroup (while keeping the existing 2-exercise threshold at >= 80.0). Leave Core and all other muscle group logic unchanged, and do not modify any other code paths (including TEST_RECOVERY_MODE behavior).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Backend (Version 343): In generateLowerBodyWorkout(), update note logic to exactly match the provided 4-branch wording (including \"Core-focused session (leg subgroups recovering)\" and \"Limited exercises due to muscle recovery\" and \"Full lower-body workout\"), and remove the first empty-check block that returns when totalExerciseCount == 0. Apply ONLY these two changes; no build.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-8",
+      "summary": "In backend/main.mo, update generateLowerBodyWorkout() so the user-facing note logic matches exactly this 4-branch decision tree and strings:\n- If cappedExercises.size() == 0: \"All lower muscle groups recovering\"\n- Else if totalLegCount == 0: \"Core-focused session (leg subgroups recovering)\"\n- Else if cappedExercises.size() <= 3: \"Limited exercises due to muscle recovery\"\n- Else: \"Full lower-body workout\"\nDo not change any other wording.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "In backend/main.mo, within generateLowerBodyWorkout(), remove the first/duplicate early-return empty-check block that checks totalExerciseCount == 0. Preserve the remaining logic and behavior aside from removing that duplicated empty check.",
+      "reqIds": [
+        "REQ-5"
       ],
       "status": "pending"
     }

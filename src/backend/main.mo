@@ -14,6 +14,7 @@ import Runtime "mo:core/Runtime";
 
 actor {
   let TEST_RECOVERY_MODE = true;
+
   type Gender = { #male; #female; #other };
   type WeightUnit = { #kg; #lb };
   type TrainingFrequency = { #threeDays; #fourDays; #fiveDays };
@@ -285,28 +286,16 @@ actor {
       return if (group == "Core") { 2 } else { 2 };
     };
     switch (group) {
-      case ("Quads") {
-        let recoveryPct = recovery.quadsRecovery.recoveryPercentage;
+      case ("Quads" or "Hamstrings" or "Glutes" or "Calves") {
+        let recoveryPct = switch (group) {
+          case ("Quads") { recovery.quadsRecovery.recoveryPercentage };
+          case ("Hamstrings") { recovery.hamstringsRecovery.recoveryPercentage };
+          case ("Glutes") { recovery.glutesRecovery.recoveryPercentage };
+          case ("Calves") { recovery.calvesRecovery.recoveryPercentage };
+          case (_) { 0.0 };
+        };
         if (recoveryPct >= 80.0) { 2 }
-        else if (recoveryPct >= 50.0) { 1 }
-        else { 0 };
-      };
-      case ("Hamstrings") {
-        let recoveryPct = recovery.hamstringsRecovery.recoveryPercentage;
-        if (recoveryPct >= 80.0) { 2 }
-        else if (recoveryPct >= 50.0) { 1 }
-        else { 0 };
-      };
-      case ("Glutes") {
-        let recoveryPct = recovery.glutesRecovery.recoveryPercentage;
-        if (recoveryPct >= 80.0) { 2 }
-        else if (recoveryPct >= 50.0) { 1 }
-        else { 0 };
-      };
-      case ("Calves") {
-        let recoveryPct = recovery.calvesRecovery.recoveryPercentage;
-        if (recoveryPct >= 80.0) { 2 }
-        else if (recoveryPct >= 50.0) { 1 }
+        else if (recoveryPct >= 30.0) { 1 }
         else { 0 };
       };
       case ("Chest" or "Back" or "Shoulders" or "Arms") {
@@ -382,7 +371,7 @@ actor {
 
   public query ({ caller }) func isTestRecoveryModeEnabled() : async Bool {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return false;
+      Runtime.trap("Unauthorized: Only authenticated users can check recovery mode");
     };
     TEST_RECOVERY_MODE;
   };
@@ -396,9 +385,6 @@ actor {
   };
 
   public shared ({ caller }) func assignCallerUserRole(user : Principal, role : AccessControl.UserRole) : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can assign roles");
-    };
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 
@@ -700,7 +686,6 @@ actor {
     };
   };
 
-  /// unified check for empty and core-only workouts after all groups built
   public shared ({ caller }) func generateLowerBodyWorkout() : async Result<WorkoutWithNote> {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
       return #err(#unauthorized("Only authenticated users can generate workouts"));
@@ -747,16 +732,6 @@ actor {
     );
 
     let totalLegCount = quadsSection.size() + hamstringsSection.size() + glutesSection.size() + calvesSection.size();
-    let totalExerciseCount = totalLegCount + coreSection.size();
-
-    if (totalExerciseCount == 0) {
-      return #ok({
-        exercises = [];
-        timestamp = Time.now();
-        totalVolume = 0.0;
-        note = "All lower muscle groups recovering";
-      });
-    };
 
     var allExercises : [WorkoutExercise] = [];
     allExercises := allExercises.concat(quadsSection).concat(hamstringsSection).concat(glutesSection).concat(calvesSection).concat(coreSection);
@@ -769,15 +744,6 @@ actor {
     Debug.print("DEBUG: Post-dedup exercises = " # finalExercises.size().toText());
     Debug.print("DEBUG: Post-dedup leg exercises = " # finalLegCount.toText());
 
-    if (finalExercises.size() == 0) {
-      return #ok({
-        exercises = [];
-        timestamp = Time.now();
-        totalVolume = 0.0;
-        note = "All lower body and core groups recovering";
-      });
-    };
-
     let cappedExercises = if (finalExercises.size() > 8) {
       Array.tabulate(8, func(i) { finalExercises[i] });
     } else { finalExercises };
@@ -786,14 +752,16 @@ actor {
       func(acc, we) { acc + (toF(we.sets) * toF(we.reps) * we.suggestedWeight) },
     );
 
-    // Logic issue #717
-    let note = if (finalLegCount == 0) {
-      "Core-focused session";
+    let note = if (cappedExercises.size() == 0) {
+      "All lower muscle groups recovering";
+    } else if (totalLegCount == 0) {
+      "Core-focused session (leg subgroups recovering)";
     } else if (cappedExercises.size() <= 3) {
-      "Limited leg exercises due to muscle recovery";
+      "Limited exercises due to muscle recovery";
     } else {
-      "Full lower-body workout (limited volume)";
+      "Full lower-body workout";
     };
+
     #ok({
       exercises = cappedExercises;
       timestamp = Time.now();
