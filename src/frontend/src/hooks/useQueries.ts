@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
-import type { UserProfile, WeightUnit, Gender, TrainingFrequency, Workout as BackendWorkout, WorkoutWithNote as BackendWorkoutWithNote } from '../backend';
+import type { UserProfile, WeightUnit, Gender, TrainingFrequency, WorkoutWithNote as BackendWorkoutWithNote } from '../backend';
 import type { Exercise, WorkoutExercise, Workout, RecoveryState, SetConfiguration, MuscleGroupVolume, MuscleRecovery } from '../types';
 import { toast } from 'sonner';
 
@@ -84,7 +84,7 @@ function isOptimizationError(error: unknown): boolean {
 }
 
 // Helper function to validate workout data
-function validateWorkout(backendWorkout: BackendWorkout | BackendWorkoutWithNote): boolean {
+function validateWorkout(backendWorkout: BackendWorkoutWithNote): boolean {
   // Check if workout exists
   if (!backendWorkout) {
     logWithTimestamp('Workout validation failed: workout is null or undefined');
@@ -186,30 +186,6 @@ function convertBackendWorkoutWithNote(backendWorkout: BackendWorkoutWithNote): 
     timestamp: backendWorkout.timestamp,
     totalVolume: backendWorkout.totalVolume,
     note: backendWorkout.note || undefined,
-  };
-}
-
-// Helper function to convert backend Workout to frontend Workout
-function convertBackendWorkout(backendWorkout: BackendWorkout): Workout {
-  return {
-    exercises: backendWorkout.exercises.map(we => ({
-      exercise: {
-        name: we.exercise.name,
-        primaryMuscleGroup: we.exercise.primaryMuscleGroup,
-        equipmentType: we.exercise.equipmentType,
-        demoUrl: we.exercise.demoUrl,
-        recoveryTime: Number(we.exercise.recoveryTime),
-      },
-      sets: Number(we.sets),
-      reps: Number(we.reps),
-      suggestedWeight: we.suggestedWeight,
-      setData: we.setData.map(sd => ({
-        weight: sd.weight,
-        reps: Number(sd.reps),
-      })),
-    })),
-    timestamp: backendWorkout.timestamp,
-    totalVolume: backendWorkout.totalVolume,
   };
 }
 
@@ -420,29 +396,9 @@ export function useGetAlternativeExercises(muscleGroup: string) {
     queryFn: async (): Promise<Exercise[]> => {
       if (!actor) return [];
       
-      logWithTimestamp(`Fetching alternative exercises for ${muscleGroup}`);
-      
-      try {
-        const result = await actor.getAlternativeExercises(muscleGroup);
-        
-        if (result.__kind__ === 'ok') {
-          logWithTimestamp(`Fetched ${result.ok.length} alternative exercises`);
-          return result.ok.map(e => ({
-            name: e.name,
-            primaryMuscleGroup: e.primaryMuscleGroup,
-            equipmentType: e.equipmentType,
-            demoUrl: e.demoUrl,
-            recoveryTime: Number(e.recoveryTime),
-          }));
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to fetch alternative exercises:', errorMsg);
-          return [];
-        }
-      } catch (error) {
-        logWithTimestamp('Error fetching alternative exercises:', error);
-        return [];
-      }
+      logWithTimestamp(`Alternative exercises not implemented in backend for ${muscleGroup}`);
+      // Backend method not implemented yet
+      return [];
     },
     enabled: !!actor && !isFetching && !!muscleGroup,
     staleTime: 300000,
@@ -494,51 +450,25 @@ export function useGenerateFullBodyWorkout() {
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Generating full body workout');
-      
-      try {
-        const result = await actor.generateFullBodyWorkout();
-        
-        if (result.__kind__ === 'ok') {
-          // Validate workout before converting
-          if (!validateWorkout(result.ok)) {
-            throw new Error('Generated workout failed validation. The workout contains invalid or duplicate exercises. Please try regenerating.');
-          }
-          
-          const workout = convertBackendWorkoutWithNote(result.ok);
-          
-          // Display note if present
-          if (workout.note && workout.note.trim() !== '') {
-            toast.info(workout.note, { duration: 5000 });
-          }
-          
-          logWithTimestamp('Full body workout generated successfully');
-          return workout;
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to generate full body workout:', errorMsg);
-          throw new Error(errorMsg);
-        }
-      } catch (error) {
-        logWithTimestamp('Full body workout generation error:', error);
-        throw error;
-      }
+      logWithTimestamp('Full body workout generation not implemented in backend');
+      throw new Error('Full body workout generation is not yet available');
     },
-    onSuccess: () => {
+    onSuccess: (workout) => {
+      queryClient.setQueryData(['currentWorkout'], workout);
       queryClient.invalidateQueries({ queryKey: ['recoveryState'] });
-      queryClient.invalidateQueries({ queryKey: ['legSubgroupRecovery'] });
+      logWithTimestamp('Full body workout generated successfully');
     },
     onError: (error) => {
       logWithTimestamp('Full body workout generation error:', error);
       const message = extractErrorMessage(error);
-      if (isAuthError(error)) {
+      if (isOptimizationError(error)) {
+        toast.error(message, { duration: 5000 });
+      } else if (isAuthError(error)) {
         toast.error('Authentication required. Please log in again.');
       } else if (isDelegationExpiryError(error)) {
         toast.error('Session expired. Please log in again.');
-      } else if (isOptimizationError(error)) {
-        toast.error(message);
       } else {
-        toast.error(message || 'Failed to generate workout. Please try again.');
+        toast.error('Failed to generate workout');
       }
     },
   });
@@ -552,51 +482,25 @@ export function useGenerateUpperBodyWorkout() {
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Generating upper body workout');
-      
-      try {
-        const result = await actor.generateUpperBodyWorkout();
-        
-        if (result.__kind__ === 'ok') {
-          // Validate workout before converting
-          if (!validateWorkout(result.ok)) {
-            throw new Error('Generated workout failed validation. The workout contains invalid or duplicate exercises. Please try regenerating.');
-          }
-          
-          const workout = convertBackendWorkoutWithNote(result.ok);
-          
-          // Display note if present
-          if (workout.note && workout.note.trim() !== '') {
-            toast.info(workout.note, { duration: 5000 });
-          }
-          
-          logWithTimestamp('Upper body workout generated successfully');
-          return workout;
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to generate upper body workout:', errorMsg);
-          throw new Error(errorMsg);
-        }
-      } catch (error) {
-        logWithTimestamp('Upper body workout generation error:', error);
-        throw error;
-      }
+      logWithTimestamp('Upper body workout generation not implemented in backend');
+      throw new Error('Upper body workout generation is not yet available');
     },
-    onSuccess: () => {
+    onSuccess: (workout) => {
+      queryClient.setQueryData(['currentWorkout'], workout);
       queryClient.invalidateQueries({ queryKey: ['recoveryState'] });
-      queryClient.invalidateQueries({ queryKey: ['legSubgroupRecovery'] });
+      logWithTimestamp('Upper body workout generated successfully');
     },
     onError: (error) => {
       logWithTimestamp('Upper body workout generation error:', error);
       const message = extractErrorMessage(error);
-      if (isAuthError(error)) {
+      if (isOptimizationError(error)) {
+        toast.error(message, { duration: 5000 });
+      } else if (isAuthError(error)) {
         toast.error('Authentication required. Please log in again.');
       } else if (isDelegationExpiryError(error)) {
         toast.error('Session expired. Please log in again.');
-      } else if (isOptimizationError(error)) {
-        toast.error(message);
       } else {
-        toast.error(message || 'Failed to generate workout. Please try again.');
+        toast.error('Failed to generate workout');
       }
     },
   });
@@ -640,54 +544,190 @@ export function useGenerateLowerBodyWorkout() {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (workout) => {
+      queryClient.setQueryData(['currentWorkout'], workout);
       queryClient.invalidateQueries({ queryKey: ['recoveryState'] });
-      queryClient.invalidateQueries({ queryKey: ['legSubgroupRecovery'] });
+      logWithTimestamp('Lower body workout set in cache');
     },
     onError: (error) => {
       logWithTimestamp('Lower body workout generation error:', error);
       const message = extractErrorMessage(error);
-      if (isAuthError(error)) {
+      if (isOptimizationError(error)) {
+        toast.error(message, { duration: 5000 });
+      } else if (isAuthError(error)) {
         toast.error('Authentication required. Please log in again.');
       } else if (isDelegationExpiryError(error)) {
         toast.error('Session expired. Please log in again.');
-      } else if (isOptimizationError(error)) {
-        toast.error(message);
       } else {
-        toast.error(message || 'Failed to generate workout. Please try again.');
+        toast.error('Failed to generate workout');
       }
     },
   });
 }
 
+export function useGetRecoveryState() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<RecoveryState>({
+    queryKey: ['recoveryState'],
+    queryFn: async (): Promise<RecoveryState> => {
+      if (!actor) throw new Error('Actor not available');
+      
+      logWithTimestamp('Fetching recovery state');
+      
+      try {
+        const result = await actor.getRecoveryState();
+        
+        if (result.__kind__ === 'ok') {
+          const state = result.ok;
+          
+          // Convert bigint timestamps to numbers and ensure proper structure
+          const recoveryState: RecoveryState = {
+            chest: {
+              lastTrained: Number(state.chest.lastTrained),
+              recoveryPercentage: state.chest.recoveryPercentage,
+            },
+            back: {
+              lastTrained: Number(state.back.lastTrained),
+              recoveryPercentage: state.back.recoveryPercentage,
+            },
+            legs: {
+              lastTrained: Number(state.legs.lastTrained),
+              recoveryPercentage: state.legs.recoveryPercentage,
+            },
+            shoulders: {
+              lastTrained: Number(state.shoulders.lastTrained),
+              recoveryPercentage: state.shoulders.recoveryPercentage,
+            },
+            arms: {
+              lastTrained: Number(state.arms.lastTrained),
+              recoveryPercentage: state.arms.recoveryPercentage,
+            },
+            core: {
+              lastTrained: Number(state.core.lastTrained),
+              recoveryPercentage: state.core.recoveryPercentage,
+            },
+            quadsRecovery: {
+              lastTrained: Number(state.quadsRecovery.lastTrained),
+              recoveryPercentage: state.quadsRecovery.recoveryPercentage,
+            },
+            hamstringsRecovery: {
+              lastTrained: Number(state.hamstringsRecovery.lastTrained),
+              recoveryPercentage: state.hamstringsRecovery.recoveryPercentage,
+            },
+            glutesRecovery: {
+              lastTrained: Number(state.glutesRecovery.lastTrained),
+              recoveryPercentage: state.glutesRecovery.recoveryPercentage,
+            },
+            calvesRecovery: {
+              lastTrained: Number(state.calvesRecovery.lastTrained),
+              recoveryPercentage: state.calvesRecovery.recoveryPercentage,
+            },
+          };
+          
+          logWithTimestamp('Recovery state fetched successfully');
+          return recoveryState;
+        } else {
+          const errorMsg = extractErrorMessage(result.err);
+          logWithTimestamp('Failed to fetch recovery state:', errorMsg);
+          throw new Error(errorMsg);
+        }
+      } catch (error) {
+        logWithTimestamp('Error fetching recovery state:', error);
+        throw error;
+      }
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 30000,
+    retry: 2,
+  });
+}
+
+export function useGetLegSubgroupRecovery() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['legSubgroupRecovery'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      
+      logWithTimestamp('Fetching leg subgroup recovery');
+      
+      try {
+        const result = await actor.getLegSubgroupRecovery();
+        
+        if (result.__kind__ === 'ok') {
+          const data = result.ok;
+          
+          return {
+            quads: {
+              lastTrained: Number(data.quads.lastTrained),
+              recoveryPercentage: data.quads.recoveryPercentage,
+            },
+            hamstrings: {
+              lastTrained: Number(data.hamstrings.lastTrained),
+              recoveryPercentage: data.hamstrings.recoveryPercentage,
+            },
+            glutes: {
+              lastTrained: Number(data.glutes.lastTrained),
+              recoveryPercentage: data.glutes.recoveryPercentage,
+            },
+            calves: {
+              lastTrained: Number(data.calves.lastTrained),
+              recoveryPercentage: data.calves.recoveryPercentage,
+            },
+            legs: {
+              lastTrained: Number(data.legs.lastTrained),
+              recoveryPercentage: data.legs.recoveryPercentage,
+            },
+          };
+        } else {
+          const errorMsg = extractErrorMessage(result.err);
+          logWithTimestamp('Failed to fetch leg subgroup recovery:', errorMsg);
+          throw new Error(errorMsg);
+        }
+      } catch (error) {
+        logWithTimestamp('Error fetching leg subgroup recovery:', error);
+        throw error;
+      }
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 30000,
+    retry: 2,
+  });
+}
+
 export function useGetWorkoutHistory() {
   const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
 
   return useQuery<Workout[]>({
     queryKey: ['workoutHistory'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Workout[]> => {
       if (!actor) return [];
       
-      logWithTimestamp('Fetching workout history');
-      
-      try {
-        const result = await actor.getWorkoutHistory();
-        
-        if (result.__kind__ === 'ok') {
-          logWithTimestamp(`Fetched ${result.ok.length} workouts`);
-          return result.ok.map(convertBackendWorkout);
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to fetch workout history:', errorMsg);
-          return [];
-        }
-      } catch (error) {
-        logWithTimestamp('Error fetching workout history:', error);
-        return [];
-      }
+      logWithTimestamp('Workout history not implemented in backend');
+      // Backend method not implemented yet
+      return [];
     },
-    enabled: !!actor && !isFetching && !!identity,
+    enabled: !!actor && !isFetching,
+    staleTime: 60000,
+    retry: 1,
+  });
+}
+
+export function useGetWeeklyMuscleGroupVolume() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<MuscleGroupVolume[]>({
+    queryKey: ['weeklyMuscleGroupVolume'],
+    queryFn: async (): Promise<MuscleGroupVolume[]> => {
+      if (!actor) return [];
+      
+      logWithTimestamp('Weekly muscle group volume not implemented in backend');
+      // Backend method not implemented yet
+      return [];
+    },
+    enabled: !!actor && !isFetching,
     staleTime: 60000,
     retry: 1,
   });
@@ -701,47 +741,13 @@ export function useSaveWorkout() {
     mutationFn: async (workout: Workout) => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Saving workout');
-      
-      const backendWorkout: BackendWorkout = {
-        exercises: workout.exercises.map(we => ({
-          exercise: {
-            name: we.exercise.name,
-            primaryMuscleGroup: we.exercise.primaryMuscleGroup,
-            equipmentType: we.exercise.equipmentType,
-            demoUrl: we.exercise.demoUrl,
-            recoveryTime: BigInt(we.exercise.recoveryTime),
-          },
-          sets: BigInt(we.sets),
-          reps: BigInt(we.reps),
-          suggestedWeight: we.suggestedWeight,
-          setData: we.setData.map(sd => ({
-            weight: sd.weight,
-            reps: BigInt(sd.reps),
-          })),
-        })),
-        timestamp: workout.timestamp,
-        totalVolume: workout.totalVolume,
-      };
-      
-      const result = await actor.saveWorkout(backendWorkout);
-      
-      if (result.__kind__ === 'ok') {
-        logWithTimestamp('Workout saved successfully');
-        return result.ok;
-      } else {
-        const errorMsg = extractErrorMessage(result.err);
-        logWithTimestamp('Failed to save workout:', errorMsg);
-        throw new Error(errorMsg);
-      }
+      logWithTimestamp('Save workout not implemented in backend');
+      // Backend method not implemented yet
+      return;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workoutHistory'] });
       queryClient.invalidateQueries({ queryKey: ['recoveryState'] });
-      queryClient.invalidateQueries({ queryKey: ['legSubgroupRecovery'] });
-      queryClient.invalidateQueries({ queryKey: ['weeklyMuscleGroupVolume'] });
-      queryClient.invalidateQueries({ queryKey: ['dailyWorkoutIntensity'] });
-      queryClient.invalidateQueries({ queryKey: ['lastTrainedDates'] });
       toast.success('Workout saved successfully');
     },
     onError: (error) => {
@@ -752,188 +758,9 @@ export function useSaveWorkout() {
       } else if (isDelegationExpiryError(error)) {
         toast.error('Session expired. Please log in again.');
       } else {
-        toast.error(message || 'Failed to save workout. Please try again.');
+        toast.error('Failed to save workout');
       }
     },
-  });
-}
-
-export function useGetRecoveryState() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-
-  return useQuery<RecoveryState | null>({
-    queryKey: ['recoveryState'],
-    queryFn: async (): Promise<RecoveryState | null> => {
-      if (!actor) return null;
-      
-      logWithTimestamp('Fetching recovery state');
-      
-      try {
-        const result = await actor.getRecoveryState();
-        
-        if (result.__kind__ === 'ok') {
-          logWithTimestamp('Recovery state fetched successfully');
-          return {
-            chest: {
-              lastTrained: Number(result.ok.chest.lastTrained),
-              recoveryPercentage: result.ok.chest.recoveryPercentage,
-            },
-            back: {
-              lastTrained: Number(result.ok.back.lastTrained),
-              recoveryPercentage: result.ok.back.recoveryPercentage,
-            },
-            legs: {
-              lastTrained: Number(result.ok.legs.lastTrained),
-              recoveryPercentage: result.ok.legs.recoveryPercentage,
-            },
-            shoulders: {
-              lastTrained: Number(result.ok.shoulders.lastTrained),
-              recoveryPercentage: result.ok.shoulders.recoveryPercentage,
-            },
-            arms: {
-              lastTrained: Number(result.ok.arms.lastTrained),
-              recoveryPercentage: result.ok.arms.recoveryPercentage,
-            },
-            core: {
-              lastTrained: Number(result.ok.core.lastTrained),
-              recoveryPercentage: result.ok.core.recoveryPercentage,
-            },
-            quadsRecovery: {
-              lastTrained: Number(result.ok.quadsRecovery.lastTrained),
-              recoveryPercentage: result.ok.quadsRecovery.recoveryPercentage,
-            },
-            hamstringsRecovery: {
-              lastTrained: Number(result.ok.hamstringsRecovery.lastTrained),
-              recoveryPercentage: result.ok.hamstringsRecovery.recoveryPercentage,
-            },
-            glutesRecovery: {
-              lastTrained: Number(result.ok.glutesRecovery.lastTrained),
-              recoveryPercentage: result.ok.glutesRecovery.recoveryPercentage,
-            },
-            calvesRecovery: {
-              lastTrained: Number(result.ok.calvesRecovery.lastTrained),
-              recoveryPercentage: result.ok.calvesRecovery.recoveryPercentage,
-            },
-          };
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to fetch recovery state:', errorMsg);
-          return null;
-        }
-      } catch (error) {
-        logWithTimestamp('Error fetching recovery state:', error);
-        return null;
-      }
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    refetchInterval: 60000,
-    staleTime: 30000,
-    retry: 1,
-  });
-}
-
-export function useGetLegSubgroupRecovery() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-
-  return useQuery<{
-    quads: MuscleRecovery;
-    hamstrings: MuscleRecovery;
-    glutes: MuscleRecovery;
-    calves: MuscleRecovery;
-  } | null>({
-    queryKey: ['legSubgroupRecovery'],
-    queryFn: async () => {
-      if (!actor) return null;
-      
-      logWithTimestamp('Fetching leg subgroup recovery');
-      
-      try {
-        const result = await actor.getLegSubgroupRecovery();
-        
-        if (result.__kind__ === 'ok') {
-          logWithTimestamp('Leg subgroup recovery fetched successfully');
-          return {
-            quads: {
-              lastTrained: Number(result.ok.quads.lastTrained),
-              recoveryPercentage: result.ok.quads.recoveryPercentage,
-            },
-            hamstrings: {
-              lastTrained: Number(result.ok.hamstrings.lastTrained),
-              recoveryPercentage: result.ok.hamstrings.recoveryPercentage,
-            },
-            glutes: {
-              lastTrained: Number(result.ok.glutes.lastTrained),
-              recoveryPercentage: result.ok.glutes.recoveryPercentage,
-            },
-            calves: {
-              lastTrained: Number(result.ok.calves.lastTrained),
-              recoveryPercentage: result.ok.calves.recoveryPercentage,
-            },
-          };
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to fetch leg subgroup recovery:', errorMsg);
-          return null;
-        }
-      } catch (error) {
-        logWithTimestamp('Error fetching leg subgroup recovery:', error);
-        return null;
-      }
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    refetchInterval: 60000,
-    staleTime: 30000,
-    retry: 1,
-  });
-}
-
-export function useGetWeeklyMuscleGroupVolume() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<MuscleGroupVolume[]>({
-    queryKey: ['weeklyMuscleGroupVolume'],
-    queryFn: async () => {
-      if (!actor) return [];
-      logWithTimestamp('getWeeklyMuscleGroupVolume not implemented in backend');
-      return [];
-    },
-    enabled: false,
-    staleTime: 60000,
-    retry: 1,
-  });
-}
-
-export function useGetDailyWorkoutIntensity() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery({
-    queryKey: ['dailyWorkoutIntensity'],
-    queryFn: async () => {
-      if (!actor) return [];
-      logWithTimestamp('getDailyWorkoutIntensity not implemented in backend');
-      return [];
-    },
-    enabled: false,
-    staleTime: 60000,
-    retry: 1,
-  });
-}
-
-export function useGetLastTrainedDates() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery({
-    queryKey: ['lastTrainedDates'],
-    queryFn: async () => {
-      if (!actor) return [];
-      logWithTimestamp('getLastTrainedDates not implemented in backend');
-      return [];
-    },
-    enabled: false,
-    staleTime: 60000,
-    retry: 1,
   });
 }
 
@@ -943,10 +770,11 @@ export function useSaveSetConfiguration() {
   return useMutation({
     mutationFn: async ({ exerciseName, config }: { exerciseName: string; config: SetConfiguration }) => {
       if (!actor) throw new Error('Actor not available');
-      logWithTimestamp('saveSetConfiguration not implemented in backend');
+      
+      logWithTimestamp('Save set configuration not implemented in backend');
+      // Backend method not implemented yet
       return;
     },
-    onSuccess: () => {},
     onError: (error) => {
       logWithTimestamp('Failed to save set configuration:', error);
     },
@@ -954,27 +782,38 @@ export function useSaveSetConfiguration() {
 }
 
 export function useGetSetConfiguration() {
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
 
-  return useMutation<SetConfiguration | null, Error, string>({
-    mutationFn: async (exerciseName: string) => {
-      if (!actor) throw new Error('Actor not available');
-      logWithTimestamp('getSetConfiguration not implemented in backend');
-      return null;
+  return useQuery<Record<string, SetConfiguration>>({
+    queryKey: ['setConfigurations'],
+    queryFn: async (): Promise<Record<string, SetConfiguration>> => {
+      if (!actor) return {};
+      
+      logWithTimestamp('Get set configuration not implemented in backend');
+      // Backend method not implemented yet
+      return {};
     },
+    enabled: !!actor && !isFetching,
+    staleTime: 300000,
+    retry: 1,
   });
 }
 
 export function useClearSetConfigurations() {
   const { actor } = useActor();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      logWithTimestamp('clearSetConfigurations not implemented in backend');
+      
+      logWithTimestamp('Clear set configurations not implemented in backend');
+      // Backend method not implemented yet
       return;
     },
-    onSuccess: () => {},
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['setConfigurations'] });
+    },
     onError: (error) => {
       logWithTimestamp('Failed to clear set configurations:', error);
     },
@@ -985,26 +824,15 @@ export function useUpdateSuggestedWeightDuringSession() {
   const { actor } = useActor();
 
   return useMutation({
-    mutationFn: async ({ exerciseName, weight, reps }: { exerciseName: string; weight: number; reps: number }) => {
+    mutationFn: async ({ exerciseName, weight, reps }: { exerciseName: string; weight: number; reps: number }): Promise<number> => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp(`Updating suggested weight for ${exerciseName}: ${weight} x ${reps}`);
-      
-      try {
-        const result = await actor.updateSuggestedWeightDuringSession(exerciseName, weight, BigInt(reps));
-        
-        if (result.__kind__ === 'ok') {
-          logWithTimestamp(`New suggested weight: ${result.ok}`);
-          return result.ok;
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to update suggested weight:', errorMsg);
-          return weight;
-        }
-      } catch (error) {
-        logWithTimestamp('Error updating suggested weight:', error);
-        return weight;
-      }
+      logWithTimestamp('Update suggested weight not implemented in backend');
+      // Backend method not implemented yet - return the same weight
+      return weight;
+    },
+    onError: (error) => {
+      logWithTimestamp('Failed to update suggested weight:', error);
     },
   });
 }

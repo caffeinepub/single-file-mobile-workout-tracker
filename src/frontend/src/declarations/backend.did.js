@@ -43,12 +43,8 @@ export const AppError = IDL.Variant({
   'optimizationFailed' : IDL.Text,
   'unauthorized' : IDL.Text,
 });
-export const Result_7 = IDL.Variant({
+export const Result_4 = IDL.Variant({
   'ok' : WorkoutWithNote,
-  'err' : AppError,
-});
-export const Result_6 = IDL.Variant({
-  'ok' : IDL.Vec(Exercise),
   'err' : AppError,
 });
 export const TrainingFrequency = IDL.Variant({
@@ -71,7 +67,7 @@ export const UserProfile = IDL.Record({
   'gender' : Gender,
   'restTime' : IDL.Int,
 });
-export const Result_3 = IDL.Variant({
+export const Result_1 = IDL.Variant({
   'ok' : IDL.Opt(UserProfile),
   'err' : AppError,
 });
@@ -79,42 +75,34 @@ export const MuscleRecovery = IDL.Record({
   'lastTrained' : IDL.Int,
   'recoveryPercentage' : IDL.Float64,
 });
-export const Result_5 = IDL.Variant({
-  'ok' : IDL.Record({
-    'legs' : MuscleRecovery,
-    'quads' : MuscleRecovery,
-    'hamstrings' : MuscleRecovery,
-    'glutes' : MuscleRecovery,
-    'calves' : MuscleRecovery,
-  }),
+export const LegSubgroupRecovery = IDL.Record({
+  'legs' : MuscleRecovery,
+  'quads' : MuscleRecovery,
+  'hamstrings' : MuscleRecovery,
+  'glutes' : MuscleRecovery,
+  'calves' : MuscleRecovery,
+});
+export const Result_3 = IDL.Variant({
+  'ok' : LegSubgroupRecovery,
   'err' : AppError,
 });
-export const Result_4 = IDL.Variant({
-  'ok' : IDL.Record({
-    'calvesRecovery' : MuscleRecovery,
-    'quadsRecovery' : MuscleRecovery,
-    'hamstringsRecovery' : MuscleRecovery,
-    'shoulders' : MuscleRecovery,
-    'arms' : MuscleRecovery,
-    'back' : MuscleRecovery,
-    'core' : MuscleRecovery,
-    'chest' : MuscleRecovery,
-    'legs' : MuscleRecovery,
-    'glutesRecovery' : MuscleRecovery,
-  }),
-  'err' : AppError,
-});
-export const Workout = IDL.Record({
-  'totalVolume' : IDL.Float64,
-  'exercises' : IDL.Vec(WorkoutExercise),
-  'timestamp' : IDL.Int,
+export const RecoveryStateWithLegs = IDL.Record({
+  'calvesRecovery' : MuscleRecovery,
+  'quadsRecovery' : MuscleRecovery,
+  'hamstringsRecovery' : MuscleRecovery,
+  'shoulders' : MuscleRecovery,
+  'arms' : MuscleRecovery,
+  'back' : MuscleRecovery,
+  'core' : MuscleRecovery,
+  'chest' : MuscleRecovery,
+  'legs' : MuscleRecovery,
+  'glutesRecovery' : MuscleRecovery,
 });
 export const Result_2 = IDL.Variant({
-  'ok' : IDL.Vec(Workout),
+  'ok' : RecoveryStateWithLegs,
   'err' : AppError,
 });
-export const Result_1 = IDL.Variant({ 'ok' : IDL.Null, 'err' : AppError });
-export const Result = IDL.Variant({ 'ok' : IDL.Float64, 'err' : AppError });
+export const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : AppError });
 
 export const idlService = IDL.Service({
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
@@ -123,26 +111,16 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
       ['query'],
     ),
-  'generateFullBodyWorkout' : IDL.Func([], [Result_7], []),
-  'generateLowerBodyWorkout' : IDL.Func([], [Result_7], []),
-  'generateUpperBodyWorkout' : IDL.Func([], [Result_7], []),
-  'getAlternativeExercises' : IDL.Func([IDL.Text], [Result_6], ['query']),
-  'getCallerUserProfile' : IDL.Func([], [Result_3], ['query']),
+  'generateLowerBodyWorkout' : IDL.Func([], [Result_4], []),
+  'getCallerUserProfile' : IDL.Func([], [Result_1], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getLegSubgroupRecovery' : IDL.Func([], [Result_5], ['query']),
-  'getRecoveryState' : IDL.Func([], [Result_4], ['query']),
-  'getUserProfile' : IDL.Func([IDL.Principal], [Result_3], ['query']),
-  'getWorkoutHistory' : IDL.Func([], [Result_2], ['query']),
+  'getLegSubgroupRecovery' : IDL.Func([], [Result_3], ['query']),
+  'getRecoveryState' : IDL.Func([], [Result_2], ['query']),
+  'getUserProfile' : IDL.Func([IDL.Principal], [Result_1], ['query']),
   'initializeAccessControl' : IDL.Func([], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isTestRecoveryModeEnabled' : IDL.Func([], [IDL.Bool], ['query']),
-  'saveCallerUserProfile' : IDL.Func([UserProfile], [Result_1], []),
-  'saveWorkout' : IDL.Func([Workout], [Result_1], []),
-  'updateSuggestedWeightDuringSession' : IDL.Func(
-      [IDL.Text, IDL.Float64, IDL.Nat],
-      [Result],
-      [],
-    ),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [Result], []),
 });
 
 export const idlInitArgs = [];
@@ -183,8 +161,7 @@ export const idlFactory = ({ IDL }) => {
     'optimizationFailed' : IDL.Text,
     'unauthorized' : IDL.Text,
   });
-  const Result_7 = IDL.Variant({ 'ok' : WorkoutWithNote, 'err' : AppError });
-  const Result_6 = IDL.Variant({ 'ok' : IDL.Vec(Exercise), 'err' : AppError });
+  const Result_4 = IDL.Variant({ 'ok' : WorkoutWithNote, 'err' : AppError });
   const TrainingFrequency = IDL.Variant({
     'threeDays' : IDL.Null,
     'fiveDays' : IDL.Null,
@@ -205,7 +182,7 @@ export const idlFactory = ({ IDL }) => {
     'gender' : Gender,
     'restTime' : IDL.Int,
   });
-  const Result_3 = IDL.Variant({
+  const Result_1 = IDL.Variant({
     'ok' : IDL.Opt(UserProfile),
     'err' : AppError,
   });
@@ -213,39 +190,34 @@ export const idlFactory = ({ IDL }) => {
     'lastTrained' : IDL.Int,
     'recoveryPercentage' : IDL.Float64,
   });
-  const Result_5 = IDL.Variant({
-    'ok' : IDL.Record({
-      'legs' : MuscleRecovery,
-      'quads' : MuscleRecovery,
-      'hamstrings' : MuscleRecovery,
-      'glutes' : MuscleRecovery,
-      'calves' : MuscleRecovery,
-    }),
+  const LegSubgroupRecovery = IDL.Record({
+    'legs' : MuscleRecovery,
+    'quads' : MuscleRecovery,
+    'hamstrings' : MuscleRecovery,
+    'glutes' : MuscleRecovery,
+    'calves' : MuscleRecovery,
+  });
+  const Result_3 = IDL.Variant({
+    'ok' : LegSubgroupRecovery,
     'err' : AppError,
   });
-  const Result_4 = IDL.Variant({
-    'ok' : IDL.Record({
-      'calvesRecovery' : MuscleRecovery,
-      'quadsRecovery' : MuscleRecovery,
-      'hamstringsRecovery' : MuscleRecovery,
-      'shoulders' : MuscleRecovery,
-      'arms' : MuscleRecovery,
-      'back' : MuscleRecovery,
-      'core' : MuscleRecovery,
-      'chest' : MuscleRecovery,
-      'legs' : MuscleRecovery,
-      'glutesRecovery' : MuscleRecovery,
-    }),
+  const RecoveryStateWithLegs = IDL.Record({
+    'calvesRecovery' : MuscleRecovery,
+    'quadsRecovery' : MuscleRecovery,
+    'hamstringsRecovery' : MuscleRecovery,
+    'shoulders' : MuscleRecovery,
+    'arms' : MuscleRecovery,
+    'back' : MuscleRecovery,
+    'core' : MuscleRecovery,
+    'chest' : MuscleRecovery,
+    'legs' : MuscleRecovery,
+    'glutesRecovery' : MuscleRecovery,
+  });
+  const Result_2 = IDL.Variant({
+    'ok' : RecoveryStateWithLegs,
     'err' : AppError,
   });
-  const Workout = IDL.Record({
-    'totalVolume' : IDL.Float64,
-    'exercises' : IDL.Vec(WorkoutExercise),
-    'timestamp' : IDL.Int,
-  });
-  const Result_2 = IDL.Variant({ 'ok' : IDL.Vec(Workout), 'err' : AppError });
-  const Result_1 = IDL.Variant({ 'ok' : IDL.Null, 'err' : AppError });
-  const Result = IDL.Variant({ 'ok' : IDL.Float64, 'err' : AppError });
+  const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : AppError });
   
   return IDL.Service({
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
@@ -254,26 +226,16 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat))],
         ['query'],
       ),
-    'generateFullBodyWorkout' : IDL.Func([], [Result_7], []),
-    'generateLowerBodyWorkout' : IDL.Func([], [Result_7], []),
-    'generateUpperBodyWorkout' : IDL.Func([], [Result_7], []),
-    'getAlternativeExercises' : IDL.Func([IDL.Text], [Result_6], ['query']),
-    'getCallerUserProfile' : IDL.Func([], [Result_3], ['query']),
+    'generateLowerBodyWorkout' : IDL.Func([], [Result_4], []),
+    'getCallerUserProfile' : IDL.Func([], [Result_1], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getLegSubgroupRecovery' : IDL.Func([], [Result_5], ['query']),
-    'getRecoveryState' : IDL.Func([], [Result_4], ['query']),
-    'getUserProfile' : IDL.Func([IDL.Principal], [Result_3], ['query']),
-    'getWorkoutHistory' : IDL.Func([], [Result_2], ['query']),
+    'getLegSubgroupRecovery' : IDL.Func([], [Result_3], ['query']),
+    'getRecoveryState' : IDL.Func([], [Result_2], ['query']),
+    'getUserProfile' : IDL.Func([IDL.Principal], [Result_1], ['query']),
     'initializeAccessControl' : IDL.Func([], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isTestRecoveryModeEnabled' : IDL.Func([], [IDL.Bool], ['query']),
-    'saveCallerUserProfile' : IDL.Func([UserProfile], [Result_1], []),
-    'saveWorkout' : IDL.Func([Workout], [Result_1], []),
-    'updateSuggestedWeightDuringSession' : IDL.Func(
-        [IDL.Text, IDL.Float64, IDL.Nat],
-        [Result],
-        [],
-      ),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [Result], []),
   });
 };
 

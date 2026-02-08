@@ -1,39 +1,80 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-07T21:57:50.738Z",
+  "generatedAt": "2026-02-08T22:05:31.900Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 0,
+    "total": 4,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-4",
-        "summary": "In backend/main.mo, update generateLowerBodyWorkout() so the user-facing note logic matches exactly this 4-branch decision tree and strings:\n- If cappedExercises.size() == 0: \"All lower muscle groups recovering\"\n- Else if totalLegCount == 0: \"Core-focused session (leg subgroups recovering)\"\n- Else if cappedExercises.size() <= 3: \"Limited exercises due to muscle recovery\"\n- Else: \"Full lower-body workout\"\nDo not change any other wording.",
-        "status": "unknown",
-        "plannedFiles": [],
+        "id": "REQ-10",
+        "summary": "Fix Lower Body workout preview rendering so that Legs is shown as a single top-level section that contains Quads, Hamstrings, Glutes, and Calves subsections (in that order) when those subgroups have exercises, and render the Core section after the Legs section when Core exercises exist.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "frontend/src/lib/workoutPreviewSections.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "frontend/src/lib/workoutPreviewSections.ts"
+        ]
+      },
+      {
+        "id": "REQ-11",
+        "summary": "Ensure any muscle groups not included in the required order (e.g., Shoulders or any unexpected groups returned by the backend) do not break ordering; render them only after Core in a stable, deterministic order.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "frontend/src/lib/workoutPreviewSections.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "frontend/src/lib/workoutPreviewSections.ts"
+        ]
+      },
+      {
+        "id": "REQ-12",
+        "summary": "Build and deploy a new draft containing the frontend workout preview fixes (Core visible in Lower Body + enforced muscle order) and report the newly created draft version number.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/DEPLOY_RETRY.md"
+        ],
         "matchedFiles": []
       },
       {
-        "id": "REQ-5",
-        "summary": "In backend/main.mo, within generateLowerBodyWorkout(), remove the first/duplicate early-return empty-check block that checks totalExerciseCount == 0. Preserve the remaining logic and behavior aside from removing that duplicated empty check.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "id": "REQ-9",
+        "summary": "Update the workout preview rendering in frontend/src/pages/WorkoutPreviewPage.tsx so that muscle-group sections are rendered in this exact top-level order when they have exercises: Chest → Back → Arms → Legs → Core.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "frontend/src/lib/workoutPreviewSections.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "frontend/src/lib/workoutPreviewSections.ts"
+        ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
     "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/lib/workoutPreviewSections.ts",
+    "frontend/src/pages/WorkoutPreviewPage.tsx",
+    "frontend/src/pages/WorkoutSessionPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

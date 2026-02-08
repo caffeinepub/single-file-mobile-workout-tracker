@@ -1,59 +1,87 @@
 {
   "kind": "build_request",
-  "title": "Backend: Fix lower-body workout note logic and remove duplicate empty-check",
-  "priority": "normal",
+  "title": "Fix missing Core section in Lower Body preview and enforce global muscle-group display order",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-4",
-      "text": "In backend/main.mo, update generateLowerBodyWorkout() so the user-facing note logic matches exactly this 4-branch decision tree and strings:\n- If cappedExercises.size() == 0: \"All lower muscle groups recovering\"\n- Else if totalLegCount == 0: \"Core-focused session (leg subgroups recovering)\"\n- Else if cappedExercises.size() <= 3: \"Limited exercises due to muscle recovery\"\n- Else: \"Full lower-body workout\"\nDo not change any other wording.",
-      "target": "backend",
+      "id": "REQ-9",
+      "text": "Update the workout preview rendering in frontend/src/pages/WorkoutPreviewPage.tsx so that muscle-group sections are rendered in this exact top-level order when they have exercises: Chest → Back → Arms → Legs → Core.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4",
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "Fix note logic to match exactly:\n   let note = if (cappedExercises.size() == 0) {\n     \"All lower muscle groups recovering\"\n   } else if (totalLegCount == 0) {\n     \"Core-focused session (leg subgroups recovering)\"\n   } else if (cappedExercises.size() <= 3) {\n     \"Limited exercises due to muscle recovery\"\n   } else {\n     \"Full lower-body workout\"\n   };",
-          "Apply ONLY these two changes. No build."
+          "Update the workout preview rendering so muscle groups ALWAYS display in this exact order when they have exercises: 1. Chest 2. Back 3. Arms 4. Legs ... 5. Core (after Legs)"
         ]
       },
       "acceptanceCriteria": [
-        "Lower-body workout generation returns a note value that is exactly one of the four specified strings, selected by the exact branch order/conditions above.",
-        "The branch conditions use cappedExercises.size() and totalLegCount exactly as specified (including the <= 3 threshold in the note decision tree)."
+        "Given any generated workout preview (Full Body, Upper Body, Lower Body, Lower Body + Core, and any other workout type), the UI renders muscle-group sections in this exact order when the group has at least one exercise: Chest, Back, Arms, Legs, Core.",
+        "If one or more of the ordered groups has zero exercises, that group is omitted without affecting the relative order of the remaining groups."
       ]
     },
     {
-      "id": "REQ-5",
-      "text": "In backend/main.mo, within generateLowerBodyWorkout(), remove the first/duplicate early-return empty-check block that checks totalExerciseCount == 0. Preserve the remaining logic and behavior aside from removing that duplicated empty check.",
-      "target": "backend",
+      "id": "REQ-10",
+      "text": "Fix Lower Body workout preview rendering so that Legs is shown as a single top-level section that contains Quads, Hamstrings, Glutes, and Calves subsections (in that order) when those subgroups have exercises, and render the Core section after the Legs section when Core exercises exist.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4",
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "Remove the first empty check block (if (totalExerciseCount == 0))",
-          "Apply ONLY these two changes. No build."
+          "Legs (top-level group with Quads/Hamstrings/Glutes/Calves subsections)",
+          "Core (after Legs)"
         ]
       },
       "acceptanceCriteria": [
-        "generateLowerBodyWorkout() no longer contains the initial duplicated conditional block that returns early when totalExerciseCount == 0.",
-        "No other logic changes are introduced besides the note decision tree update (REQ-4) and this removal."
+        "On a Lower Body (and Lower Body + Core) preview, Quads/Hamstrings/Glutes/Calves exercises are not rendered as separate top-level sections; they appear only under a single top-level \"Legs\" section.",
+        "Within the \"Legs\" section, subsections appear in this order when present: Quads, Hamstrings, Glutes, Calves.",
+        "If the workout contains any exercises where exercise.primaryMuscleGroup === \"Core\", a \"Core\" section is displayed after the \"Legs\" section; otherwise, Core is omitted.",
+        "The Core section uses the exact JSX structure provided by the user (matching the existing style expectations) for listing Core exercises, including the suggestedWeight conditional and unit display logic."
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "text": "Ensure any muscle groups not included in the required order (e.g., Shoulders or any unexpected groups returned by the backend) do not break ordering; render them only after Core in a stable, deterministic order.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Workout previews never display any top-level muscle group before Chest or between the required ordered groups when those required groups are present.",
+        "Any additional/unexpected muscle groups (if present) render after Core in a deterministic order (e.g., alphabetical), and the app does not crash."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Build and deploy a new draft containing the frontend workout preview fixes (Core visible in Lower Body + enforced muscle order) and report the newly created draft version number.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "FORCE APPLY + BUILD DRAFT: Fix Core missing in Lower Body + enforce muscle order"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new draft is successfully built and deployed with the updated frontend behavior.",
+        "The response includes the new draft version number for review/testing."
       ]
     }
   ],
   "constraints": [
-    "Apply ONLY the two requested changes inside generateLowerBodyWorkout() (note decision tree rewrite + remove the first/duplicate totalExerciseCount==0 empty check).",
-    "Do not modify getExerciseCountForGroup(), TEST_RECOVERY_MODE behavior, stable storage, types, or any other backend logic.",
-    "No frontend changes.",
-    "Do not add a migration (state schema is unchanged).",
-    "Use English for user-facing strings exactly as provided."
+    "Do not change backend code for this request.",
+    "Do not edit any files under frontend/src/components/ui (compose existing components only).",
+    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx (immutable paths).",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Fixing leg exercise visibility issues in Full Body/Lower Body workouts beyond these two generateLowerBodyWorkout() cleanups.",
-    "Changing any thresholds or selection logic outside the specified note logic update.",
-    "Turning off test recovery mode.",
-    "Any UI/JSX changes to render Core sections on the frontend."
+    "Do not modify workout generation logic or any backend muscle-group filtering/recovery logic.",
+    "Do not change workout type selection UI or add new workout types.",
+    "Do not change global styling/theme beyond what is necessary to implement the ordered grouping and Core visibility in the preview."
   ],
   "imageRequirements": {
     "required": [],

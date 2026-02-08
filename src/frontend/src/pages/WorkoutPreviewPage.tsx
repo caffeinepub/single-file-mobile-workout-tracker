@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Play, RefreshCw, ExternalLink, Loader2, AlertCircle, FlaskConical } from 'lucide-react';
 import ExerciseChangeModal from '../components/ExerciseChangeModal';
 import { toast } from 'sonner';
+import { buildOrderedSections, WorkoutSection } from '../lib/workoutPreviewSections';
 
 interface WorkoutPreviewPageProps {
   userProfile: UserProfile;
@@ -160,30 +161,109 @@ export default function WorkoutPreviewPage({
     return Math.round(totalTime);
   };
 
-  // Core inserted and leg rendering fixed in frontend/src/pages/WorkoutPreviewPage.tsx
-  // Group exercises by muscle group - leg subgroups now render separately for lower body workouts
-  const groupedExercises = workout.reduce((acc, ex, idx) => {
-    const group = ex.exercise.primaryMuscleGroup;
-    
-    if (!acc[group]) {
-      acc[group] = [];
-    }
-    acc[group].push({ exercise: ex, index: idx });
-    return acc;
-  }, {} as Record<string, Array<{ exercise: WorkoutExercise; index: number }>>);
-
+  // Build ordered sections with enforced muscle group order
+  const orderedSections = buildOrderedSections(workout);
   const isRegenerating = generateFullBody.isPending || generateUpperBody.isPending || generateLowerBody.isPending;
 
-  // Define muscle group order for consistent rendering
-  const muscleGroupOrder = ['Quads', 'Hamstrings', 'Glutes', 'Calves', 'Core', 'Chest', 'Back', 'Shoulders', 'Arms'];
-  const sortedMuscleGroups = Object.keys(groupedExercises).sort((a, b) => {
-    const indexA = muscleGroupOrder.indexOf(a);
-    const indexB = muscleGroupOrder.indexOf(b);
-    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-    return indexA - indexB;
-  });
+  const renderExerciseCard = (ex: WorkoutExercise, idx: number) => (
+    <Card key={idx} className="border border-border/50 bg-muted/30">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg">{ex.exercise.name}</CardTitle>
+            <CardDescription className="text-sm mt-1">
+              {ex.sets} sets × {ex.reps} reps • {formatWeight(ex.suggestedWeight)}
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleChangeExercise(idx)}
+              className="hover:bg-white/10 active:scale-90 rounded-xl tap-target transition-all hover:shadow-glow-primary"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <a
+              href={ex.exercise.demoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-white/10 active:scale-90 tap-target transition-all hover:shadow-glow-primary"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            {ex.exercise.equipmentType}
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderSection = (section: WorkoutSection) => {
+    // If section has subsections (Legs), render nested structure
+    if (section.subsections && section.subsections.length > 0) {
+      const totalExercises = section.subsections.reduce(
+        (sum, sub) => sum + sub.exercises.length,
+        0
+      );
+
+      return (
+        <Card key={section.name} className="border-2 border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Badge variant="default" className="text-base px-3 py-1">
+                {section.name}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                {totalExercises} exercise{totalExercises !== 1 ? 's' : ''}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {section.subsections.map((subsection) => (
+              <div key={subsection.name} className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  {subsection.name}
+                </h3>
+                <div className="space-y-3">
+                  {subsection.exercises.map(({ exercise: ex, index: idx }) =>
+                    renderExerciseCard(ex, idx)
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Standard top-level section
+    return (
+      <Card key={section.name} className="border-2 border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Badge variant="default" className="text-base px-3 py-1">
+              {section.name}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              {section.exercises.length} exercise{section.exercises.length !== 1 ? 's' : ''}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {section.exercises.map(({ exercise: ex, index: idx }) =>
+            renderExerciseCard(ex, idx)
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -268,64 +348,7 @@ export default function WorkoutPreviewPage({
             </Card>
           )}
 
-          {sortedMuscleGroups.map((muscleGroup) => {
-            const exercises = groupedExercises[muscleGroup];
-            return (
-              <Card key={muscleGroup} className="border-2 border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Badge variant="default" className="text-base px-3 py-1">
-                      {muscleGroup}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {exercises.map(({ exercise: ex, index: idx }) => (
-                    <Card key={idx} className="border border-border/50 bg-muted/30">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-lg">{ex.exercise.name}</CardTitle>
-                            <CardDescription className="text-sm mt-1">
-                              {ex.sets} sets × {ex.reps} reps • {formatWeight(ex.suggestedWeight)}
-                            </CardDescription>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleChangeExercise(idx)}
-                              className="hover:bg-white/10 active:scale-90 rounded-xl tap-target transition-all hover:shadow-glow-primary"
-                            >
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                            <a
-                              href={ex.exercise.demoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center h-9 w-9 rounded-xl hover:bg-white/10 active:scale-90 tap-target transition-all hover:shadow-glow-primary"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {ex.exercise.equipmentType}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </CardContent>
-              </Card>
-            );
-          })}
+          {orderedSections.map((section) => renderSection(section))}
         </div>
       </main>
 

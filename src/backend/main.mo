@@ -3,21 +3,19 @@ import List "mo:core/List";
 import Array "mo:core/Array";
 import Float "mo:core/Float";
 import Nat "mo:core/Nat";
-import Int "mo:core/Int";
-import Time "mo:core/Time";
-import Text "mo:core/Text";
-import Principal "mo:core/Principal";
-import AccessControl "authorization/access-control";
 import Iter "mo:core/Iter";
-import Debug "mo:core/Debug";
 import Runtime "mo:core/Runtime";
+import Principal "mo:core/Principal";
+import Migration "migration";
+import AccessControl "authorization/access-control";
 
+// Use migration with clause for explicit state migration
+(with migration = Migration.run)
 actor {
-  let TEST_RECOVERY_MODE = true;
-
   type Gender = { #male; #female; #other };
   type WeightUnit = { #kg; #lb };
   type TrainingFrequency = { #threeDays; #fourDays; #fiveDays };
+
   type Exercise = {
     name : Text;
     primaryMuscleGroup : Text;
@@ -25,6 +23,7 @@ actor {
     demoUrl : Text;
     recoveryTime : Int;
   };
+
   type WorkoutExercise = {
     exercise : Exercise;
     sets : Nat;
@@ -32,12 +31,15 @@ actor {
     suggestedWeight : Float;
     setData : [SetData];
   };
+
   type Workout = {
     exercises : [WorkoutExercise];
     timestamp : Int;
     totalVolume : Float;
   };
+
   type SetData = { weight : Float; reps : Nat };
+
   public type MuscleRecovery = { lastTrained : Int; recoveryPercentage : Float };
   public type RecoveryState = {
     chest : MuscleRecovery;
@@ -50,14 +52,37 @@ actor {
     glutesRecovery : MuscleRecovery;
     calvesRecovery : MuscleRecovery;
   };
-  type WorkoutSummary = { date : Int; exercises : [Text] };
-  type ExerciseChange = {
+
+  public type RecoveryStateWithLegs = {
+    chest : MuscleRecovery;
+    back : MuscleRecovery;
+    legs : MuscleRecovery;
+    shoulders : MuscleRecovery;
+    arms : MuscleRecovery;
+    core : MuscleRecovery;
+    quadsRecovery : MuscleRecovery;
+    hamstringsRecovery : MuscleRecovery;
+    glutesRecovery : MuscleRecovery;
+    calvesRecovery : MuscleRecovery;
+  };
+
+  public type LegSubgroupRecovery = {
+    quads : MuscleRecovery;
+    hamstrings : MuscleRecovery;
+    glutes : MuscleRecovery;
+    calves : MuscleRecovery;
+    legs : MuscleRecovery;
+  };
+
+  public type ExerciseChange = {
     originalExercise : Text;
     alternativeExercise : Text;
     timestamp : Int;
   };
-  type SetConfiguration = { weight : Float; reps : Nat; sets : Nat };
-  type AppError = {
+
+  public type SetConfiguration = { weight : Float; reps : Nat; sets : Nat };
+
+  public type AppError = {
     #unauthorized : Text;
     #adminOnly : Text;
     #userNotFound : Text;
@@ -66,15 +91,9 @@ actor {
     #userProfileNotFound : Text;
     #optimizationFailed : Text;
   };
+
   public type Result<Ok> = { #ok : Ok; #err : AppError };
-  type StableState = {
-    var userProfiles : [(Principal, UserProfile)];
-    var workoutHistory : [(Principal, [Workout])];
-    var recoveryState : [(Principal, RecoveryState)];
-    var workoutSummaries : [(Principal, [WorkoutSummary])];
-    var exerciseChanges : [(Principal, [ExerciseChange])];
-    var setConfigurations : [(Principal, [(Text, SetConfiguration)])];
-  };
+
   public type UserProfile = {
     gender : Gender;
     bodyweight : Float;
@@ -84,22 +103,16 @@ actor {
     restTime : Int;
     muscleGroupRestInterval : Int;
   };
-  type WorkoutWithNote = {
+
+  public type WorkoutWithNote = {
     exercises : [WorkoutExercise];
     timestamp : Int;
     totalVolume : Float;
     note : Text;
   };
 
-  let upperBodyLimits = Map.fromArray<Text, Int>([
-    ("Chest", 4), ("Shoulders", 4), ("Arms", 4), ("Core", 3), ("Back", 2)
-  ]);
-  let lowerBodyLimits = Map.fromArray<Text, Nat>([
-    ("Quads", 3), ("Hamstrings", 3), ("Glutes", 3), ("Calves", 2), ("Core", 3)
-  ]);
-  let upperMuscleGroups = ["Chest", "Back", "Shoulders", "Arms"];
-  let lowerMuscleGroups = ["Quads", "Hamstrings", "Glutes", "Calves"];
-  let coreMuscleGroup = "Core";
+  let TEST_RECOVERY_MODE = true;
+
   let exerciseLibrary : [Exercise] = [
     { name = "Barbell Squats"; primaryMuscleGroup = "Quads"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/barbell-squat"; recoveryTime = 72 },
     { name = "Romanian Deadlifts"; primaryMuscleGroup = "Hamstrings"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/romanian-deadlift"; recoveryTime = 72 },
@@ -238,52 +251,20 @@ actor {
       recoveryTime = 72;
     }
   ];
-  var shuffleCounter : Nat = 0;
-  var stableState : ?StableState = null;
+
   let accessControlState = AccessControl.initState();
+  var shuffleCounter : Nat = 0;
   var userProfiles : Map.Map<Principal, UserProfile> = Map.empty();
   var workoutHistory : Map.Map<Principal, List.List<Workout>> = Map.empty();
   var recoveryState : Map.Map<Principal, RecoveryState> = Map.empty();
-  var workoutSummaries : Map.Map<Principal, List.List<WorkoutSummary>> = Map.empty();
   var exerciseChanges : Map.Map<Principal, List.List<ExerciseChange>> = Map.empty();
   var setConfigurations : Map.Map<Principal, Map.Map<Text, SetConfiguration>> = Map.empty();
 
-  func toF(x : Int) : Float { x.toFloat() };
-  func toLower(t : Text) : Text {
-    let chars = t.chars();
-    let lowerChars = chars.map(func(c : Char) : Char {
-      let code = c.toNat32();
-      if (code >= 65 and code <= 90) {
-        Char.fromNat32(code + 32);
-      } else {
-        c;
-      }
-    });
-    Text.fromIter(lowerChars);
-  };
-
-  func calculateLegsFromSubgroups(
-    quads : MuscleRecovery,
-    hamstrings : MuscleRecovery,
-    glutes : MuscleRecovery,
-    calves : MuscleRecovery
-  ) : MuscleRecovery {
-    let latest = Int.max(
-      quads.lastTrained,
-      Int.max(hamstrings.lastTrained, Int.max(glutes.lastTrained, calves.lastTrained)),
-    );
-    let weightedRecovery = quads.recoveryPercentage * 0.38 +
-      hamstrings.recoveryPercentage * 0.22 +
-      glutes.recoveryPercentage * 0.30 +
-      calves.recoveryPercentage * 0.10;
-    let clampedRecovery = Float.min(100.0, Float.max(0.0, weightedRecovery));
-    { lastTrained = latest; recoveryPercentage = clampedRecovery };
-  };
-
   func getExerciseCountForGroup(group : Text, recovery : RecoveryState) : Nat {
     if (TEST_RECOVERY_MODE) {
-      Debug.print("Test recovery mode active - all groups fully recovered");
-      return if (group == "Core") { 2 } else { 2 };
+      Runtime.trap("Test recovery mode active - all groups fully recovered");
+      if (group == "Core") { return 2 };
+      return 2;
     };
     switch (group) {
       case ("Quads" or "Hamstrings" or "Glutes" or "Calves") {
@@ -306,74 +287,24 @@ actor {
     };
   };
 
-  public query ({ caller }) func debugGetExerciseCounts() : async [(Text, Nat)] {
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
-      Runtime.trap("Unauthorized: Only admins can access debug functions");
+  func calculateLegsFromSubgroups(
+    quads : MuscleRecovery,
+    hamstrings : MuscleRecovery,
+    glutes : MuscleRecovery,
+    calves : MuscleRecovery
+  ) : MuscleRecovery {
+    let latest = Int.max(
+      quads.lastTrained,
+      Int.max(hamstrings.lastTrained, Int.max(glutes.lastTrained, calves.lastTrained)),
+    );
+    let weightedRecovery = quads.recoveryPercentage * 0.38 +
+      hamstrings.recoveryPercentage * 0.22 +
+      glutes.recoveryPercentage * 0.30 +
+      calves.recoveryPercentage * 0.10;
+    {
+      lastTrained = latest;
+      recoveryPercentage = Float.min(100.0, Float.max(0.0, weightedRecovery));
     };
-    let groups = ["Quads", "Hamstrings", "Glutes", "Calves", "Core", "Chest", "Back", "Shoulders", "Arms"];
-    groups.map<Text, (Text, Nat)>(func(group) {
-      let count = exerciseLibrary.filter(func(e) { e.primaryMuscleGroup == group }).size();
-      (group, count)
-    });
-  };
-
-  public query ({ caller }) func getRecoveryState() : async Result<{
-    chest : MuscleRecovery;
-    back : MuscleRecovery;
-    legs : MuscleRecovery;
-    shoulders : MuscleRecovery;
-    arms : MuscleRecovery;
-    core : MuscleRecovery;
-    quadsRecovery : MuscleRecovery;
-    hamstringsRecovery : MuscleRecovery;
-    glutesRecovery : MuscleRecovery;
-    calvesRecovery : MuscleRecovery;
-  }> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can view recovery state"));
-    };
-    let state = switch (recoveryState.get(caller)) {
-      case (null) { getDefaultRecoveryState() };
-      case (?r) { refreshAllRecoveryPercentages(r) };
-    };
-    #ok({
-      state with
-      legs = calculateLegsFromSubgroups(
-        state.quadsRecovery, state.hamstringsRecovery, state.glutesRecovery, state.calvesRecovery
-      );
-    });
-  };
-
-  public query ({ caller }) func getLegSubgroupRecovery() : async Result<{
-    quads : MuscleRecovery;
-    hamstrings : MuscleRecovery;
-    glutes : MuscleRecovery;
-    calves : MuscleRecovery;
-    legs : MuscleRecovery;
-  }> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can view recovery state"));
-    };
-    let state = switch (recoveryState.get(caller)) {
-      case (null) { getDefaultRecoveryState() };
-      case (?r) { refreshAllRecoveryPercentages(r) };
-    };
-    #ok({
-      quads = state.quadsRecovery;
-      hamstrings = state.hamstringsRecovery;
-      glutes = state.glutesRecovery;
-      calves = state.calvesRecovery;
-      legs = calculateLegsFromSubgroups(
-        state.quadsRecovery, state.hamstringsRecovery, state.glutesRecovery, state.calvesRecovery
-      );
-    });
-  };
-
-  public query ({ caller }) func isTestRecoveryModeEnabled() : async Bool {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only authenticated users can check recovery mode");
-    };
-    TEST_RECOVERY_MODE;
   };
 
   public shared ({ caller }) func initializeAccessControl() : async () {
@@ -384,7 +315,10 @@ actor {
     AccessControl.getUserRole(accessControlState, caller);
   };
 
-  public shared ({ caller }) func assignCallerUserRole(user : Principal, role : AccessControl.UserRole) : async () {
+  public shared ({ caller }) func assignCallerUserRole(
+    user : Principal,
+    role : AccessControl.UserRole,
+  ) : async () {
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 
@@ -417,68 +351,237 @@ actor {
   func uniqueByName(exercises : [WorkoutExercise]) : [WorkoutExercise] {
     let seen = Map.empty<Text, Bool>();
     let builder = List.empty<WorkoutExercise>();
-
     for (exercise in exercises.vals()) {
-      let name = exercise.exercise.name;
-      Debug.print("Checking exercise: " # name);
-
-      switch (seen.get(name)) {
-        case (?_) {
-          Debug.print("Skipping duplicate: " # name);
-        };
+      switch (seen.get(exercise.exercise.name)) {
+        case (?_) {};
         case (null) {
-          seen.add(name, true);
+          seen.add(exercise.exercise.name, true);
           builder.add(exercise);
         };
       };
     };
-
     builder.toArray();
   };
 
-  public shared ({ caller }) func saveWorkout(workout : Workout) : async Result<()> {
+  public query ({ caller }) func getLegSubgroupRecovery() : async Result<LegSubgroupRecovery> {
     if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can save workouts"));
+      return #err(#unauthorized("Only authenticated users can view recovery state"));
+    };
+    let state = switch (recoveryState.get(caller)) {
+      case (null) { getDefaultRecoveryState() };
+      case (?r) { refreshAllRecoveryPercentages(r) };
+    };
+    #ok({
+      quads = state.quadsRecovery;
+      hamstrings = state.hamstringsRecovery;
+      glutes = state.glutesRecovery;
+      calves = state.calvesRecovery;
+      legs = calculateLegsFromSubgroups(
+        state.quadsRecovery, state.hamstringsRecovery, state.glutesRecovery, state.calvesRecovery
+      );
+    });
+  };
+
+  public query ({ caller }) func getRecoveryState() : async Result<RecoveryStateWithLegs> {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      return #err(#unauthorized("Only authenticated users can view recovery state"));
+    };
+    let state = switch (recoveryState.get(caller)) {
+      case (null) { getDefaultRecoveryState() };
+      case (?r) { refreshAllRecoveryPercentages(r) };
+    };
+    #ok({
+      state with
+      legs = calculateLegsFromSubgroups(
+        state.quadsRecovery, state.hamstringsRecovery, state.glutesRecovery, state.calvesRecovery
+      );
+    });
+  };
+
+  public query ({ caller }) func isTestRecoveryModeEnabled() : async Bool {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only authenticated users can check recovery mode");
+    };
+    TEST_RECOVERY_MODE;
+  };
+
+  public query ({ caller }) func debugGetExerciseCounts() : async [(Text, Nat)] {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can access debug functions");
+    };
+    let groups = ["Quads", "Hamstrings", "Glutes", "Calves", "Core", "Chest", "Back", "Shoulders", "Arms"];
+    groups.map<Text, (Text, Nat)>(
+      func(group) {
+        let count = exerciseLibrary.filter(func(e) { e.primaryMuscleGroup == group }).size();
+        (group, count);
+      }
+    );
+  };
+
+  func buildShuffledSectionFromArray(
+    caller : Principal,
+    profile : UserProfile,
+    exercises : [Exercise],
+    group : Text,
+    groupLimit : Nat,
+  ) : [WorkoutExercise] {
+    let groupExercises = exercises.filter(func(e) {
+      Text.equal(
+        e.primaryMuscleGroup.toLower(),
+        group.toLower(),
+      );
+    });
+    let shuffledGroup = shuffleArray(groupExercises, caller);
+    let count = Nat.min(shuffledGroup.size(), groupLimit);
+    let selected = if (shuffledGroup.size() > count) {
+      Array.tabulate(count, func(i) { shuffledGroup[i] });
+    } else { shuffledGroup };
+    let mapped = selected.map(
+      func(e) {
+        let (sets, reps) = calculateSetsAndReps(profile);
+        let suggestedWeight = calculateSuggestedWeight(e, profile);
+        {
+          exercise = e;
+          sets;
+          reps;
+          suggestedWeight;
+          setData = [];
+        };
+      }
+    );
+    mapped;
+  };
+
+  func toF(x : Int) : Float { x.toFloat() };
+
+  func calculateSetsAndReps(profile : UserProfile) : (Nat, Nat) {
+    let sets = switch (profile.trainingFrequency) {
+      case (#threeDays) { 4 };
+      case (#fourDays) { 3 };
+      case (#fiveDays) { 3 };
+    };
+    let reps = 10;
+    (sets, reps);
+  };
+
+  func calculateSuggestedWeight(exercise : Exercise, profile : UserProfile) : Float {
+    let baseWeight = switch (profile.gender) {
+      case (#male) { profile.bodyweight * 0.5 };
+      case (#female) { profile.bodyweight * 0.35 };
+      case (#other) { profile.bodyweight * 0.4 };
+    };
+    let muscleMultiplier = switch (exercise.primaryMuscleGroup) {
+      case ("Quads") { 1.3 };
+      case ("Hamstrings") { 1.25 };
+      case ("Glutes") { 1.1 };
+      case ("Calves") { 1.1 };
+      case ("Core") { 0.3 };
+      case (_) { 1.0 };
+    };
+    let equipmentMultiplier = switch (exercise.equipmentType) {
+      case ("Barbell") { 1.2 };
+      case ("Dumbbell") { 0.8 };
+      case ("Machine") { 1.0 };
+      case ("Cable") { 0.9 };
+      case ("Bodyweight") { 0.0 };
+      case ("Band") { 0.4 };
+      case (_) { 0.8 };
+    };
+    let weight = baseWeight * muscleMultiplier * equipmentMultiplier;
+    if (weight < 0.0) { 0.0 } else { weight };
+  };
+
+  public shared ({ caller }) func generateLowerBodyWorkout() : async Result<WorkoutWithNote> {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      return #err(#unauthorized("Only authenticated users can generate workouts"));
     };
 
-    let history = switch (workoutHistory.get(caller)) {
-      case (null) { List.empty<Workout>() };
-      case (?h) { h };
+    let profile = switch (userProfiles.get(caller)) {
+      case (null) { return #err(#userProfileNotFound("User profile not found")) };
+      case (?p) { p };
     };
-    history.add(workout);
-    workoutHistory.add(caller, history);
 
     let currentRecovery = switch (recoveryState.get(caller)) {
       case (null) { getDefaultRecoveryState() };
-      case (?r) { r };
+      case (?r) { refreshAllRecoveryPercentages(r) };
     };
 
-    let freshRecovery = refreshAllRecoveryPercentages(currentRecovery);
+    let quadsRequestedCount = getExerciseCountForGroup("Quads", currentRecovery);
+    let hamstringsRequestedCount = getExerciseCountForGroup("Hamstrings", currentRecovery);
+    let glutesRequestedCount = getExerciseCountForGroup("Glutes", currentRecovery);
+    let calvesRequestedCount = getExerciseCountForGroup("Calves", currentRecovery);
+    let coreRequestedCount = getExerciseCountForGroup("Core", currentRecovery);
 
-    let updatedChest = updateMuscleRecovery(freshRecovery.chest, workout, ["Chest"], 72);
-    let updatedBack = updateMuscleRecovery(freshRecovery.back, workout, ["Back"], 72);
-    let updatedShoulders = updateMuscleRecovery(freshRecovery.shoulders, workout, ["Shoulders"], 72);
-    let updatedArms = updateMuscleRecovery(freshRecovery.arms, workout, ["Arms"], 72);
-    let updatedCore = updateMuscleRecovery(freshRecovery.core, workout, ["Core"], 48);
-    let updatedQuads = updateMuscleRecovery(freshRecovery.quadsRecovery, workout, ["Quads"], 72);
-    let updatedHamstrings = updateMuscleRecovery(freshRecovery.hamstringsRecovery, workout, ["Hamstrings"], 72);
-    let updatedGlutes = updateMuscleRecovery(freshRecovery.glutesRecovery, workout, ["Glutes"], 72);
-    let updatedCalves = updateMuscleRecovery(freshRecovery.calvesRecovery, workout, ["Calves"], 72);
+    let quadsSection = buildShuffledSectionFromArray(
+      caller, profile, exerciseLibrary, "Quads", quadsRequestedCount
+    );
+    let hamstringsSection = buildShuffledSectionFromArray(
+      caller, profile, exerciseLibrary, "Hamstrings", hamstringsRequestedCount
+    );
+    let glutesSection = buildShuffledSectionFromArray(
+      caller, profile, exerciseLibrary, "Glutes", glutesRequestedCount
+    );
+    let calvesSection = buildShuffledSectionFromArray(
+      caller, profile, exerciseLibrary, "Calves", calvesRequestedCount
+    );
+    let coreSection = buildShuffledSectionFromArray(
+      caller, profile, exerciseLibrary, "Core", coreRequestedCount
+    );
+    let totalLegCount = quadsSection.size() + hamstringsSection.size() + glutesSection.size() + calvesSection.size();
 
-    let updatedRecovery : RecoveryState = {
-      chest = updatedChest;
-      back = updatedBack;
-      shoulders = updatedShoulders;
-      arms = updatedArms;
-      core = updatedCore;
-      quadsRecovery = updatedQuads;
-      hamstringsRecovery = updatedHamstrings;
-      glutesRecovery = updatedGlutes;
-      calvesRecovery = updatedCalves;
+    var allExercises : [WorkoutExercise] = [];
+    allExercises := allExercises.concat(quadsSection).concat(hamstringsSection).concat(glutesSection).concat(calvesSection).concat(coreSection);
+
+    let finalExercises = uniqueByName(allExercises);
+    let finalLegCount = quadsSection.size() + hamstringsSection.size() + glutesSection.size() + calvesSection.size();
+
+    let cappedExercises = if (finalExercises.size() > 8) {
+      Array.tabulate(8, func(i) { finalExercises[i] });
+    } else { finalExercises };
+    let totalVolume = cappedExercises.foldLeft(
+      0.0,
+      func(acc, we) { acc + (toF(we.sets) * toF(we.reps) * we.suggestedWeight) },
+    );
+    let note = if (cappedExercises.size() == 0) {
+      "All lower muscle groups recovering";
+    } else if (totalLegCount == 0) {
+      "Core-focused session (leg subgroups recovering)";
+    } else if (cappedExercises.size() <= 3) {
+      "Limited exercises due to muscle recovery";
+    } else {
+      "Full lower-body workout";
     };
+    #ok({
+      exercises = cappedExercises;
+      timestamp = 0;
+      totalVolume;
+      note;
+    });
+  };
 
-    recoveryState.add(caller, updatedRecovery);
-    #ok(());
+  func principalHash(p : Principal) : Nat {
+    let blob = p.toBlob();
+    var hash : Nat = 0;
+    for (byte in blob.vals()) {
+      hash := (hash * 31 + byte.toNat()) % 1_000_000_007;
+    };
+    hash;
+  };
+
+  func shuffleArray<T>(arr : [T], caller : Principal) : [T] {
+    let seed = principalHash(caller) + shuffleCounter;
+    shuffleCounter += 1;
+    let size = arr.size();
+    let mutableArr : [var T] = arr.toVarArray();
+    var i = size;
+    while (i > 1) {
+      i -= 1;
+      let j = (seed + i) % (i + 1);
+      let temp = mutableArr[i];
+      mutableArr[i] := mutableArr[j];
+      mutableArr[j] := temp;
+    };
+    Array.tabulate(size, func(idx) { mutableArr[idx] });
   };
 
   func updateMuscleRecovery(
@@ -487,12 +590,11 @@ actor {
     muscleGroups : [Text],
     recoveryTime : Int,
   ) : MuscleRecovery {
-    let now = Time.now();
     let targetsGroup = workout.exercises.any(func(e) {
       muscleGroups.any(func(group) { group == e.exercise.primaryMuscleGroup });
     });
     if (targetsGroup) {
-      { lastTrained = now; recoveryPercentage = 0.0 };
+      { lastTrained = 0; recoveryPercentage = 0.0 };
     } else {
       {
         lastTrained = existingRecovery.lastTrained;
@@ -502,8 +604,7 @@ actor {
   };
 
   func calculateRecoveryPercentage(lastTrained : Int, recoveryTimeHours : Int) : Float {
-    let now = Time.now();
-    let elapsedNanos = now - lastTrained;
+    let elapsedNanos = 0 - lastTrained;
     let elapsedHours = toF(elapsedNanos) / toF(3_600_000_000_000 : Int);
     let percentage = Float.min(100.0, (elapsedHours / toF(recoveryTimeHours)) * 100.0);
     percentage;
@@ -520,7 +621,7 @@ actor {
       case ("Hamstrings") { recovery.hamstringsRecovery.lastTrained };
       case ("Glutes") { recovery.glutesRecovery.lastTrained };
       case ("Calves") { recovery.calvesRecovery.lastTrained };
-      case (_) { Time.now() };
+      case (_) { 0 };
     };
   };
 
@@ -565,110 +666,8 @@ actor {
     };
   };
 
-  func buildShuffledSectionFromArray(
-    caller : Principal,
-    profile : UserProfile,
-    exercises : [Exercise],
-    group : Text,
-    groupLimit : Nat
-  ) : [WorkoutExercise] {
-    Debug.print("DEBUG-BUILD: Building for group=" # group # ", input exercises size=" # exercises.size().toText());
-    let groupExercises = exercises.filter(func(e) {
-      let matches = toLower(e.primaryMuscleGroup) == toLower(group);
-      if (matches) {
-        Debug.print("DEBUG-MATCH: " # e.name # " matches " # group);
-      } else {
-        Debug.print("DEBUG-NO-MATCH: " # e.name # " group=" # e.primaryMuscleGroup # " != " # group);
-      };
-      matches
-    });
-    Debug.print("DEBUG-BUILD: Filtered to " # groupExercises.size().toText() # " exercises for " # group);
-
-    let shuffledGroup = shuffleArray(groupExercises, caller);
-    let count = Nat.min(shuffledGroup.size(), groupLimit);
-    let selected = if (shuffledGroup.size() > count) {
-      Array.tabulate(count, func(i) { shuffledGroup[i] });
-    } else { shuffledGroup };
-    let mapped = selected.map(
-      func(e) {
-        let (sets, reps) = calculateSetsAndReps(profile);
-        let suggestedWeight = calculateSuggestedWeight(e, profile);
-        {
-          exercise = e;
-          sets;
-          reps;
-          suggestedWeight;
-          setData = [];
-        };
-      }
-    );
-    mapped;
-  };
-
-  func calculateSetsAndReps(profile : UserProfile) : (Nat, Nat) {
-    let sets = switch (profile.trainingFrequency) {
-      case (#threeDays) { 4 };
-      case (#fourDays) { 3 };
-      case (#fiveDays) { 3 };
-    };
-    let reps = 10;
-    (sets, reps);
-  };
-
-  func calculateSuggestedWeight(exercise : Exercise, profile : UserProfile) : Float {
-    let baseWeight = switch (profile.gender) {
-      case (#male) { profile.bodyweight * 0.5 };
-      case (#female) { profile.bodyweight * 0.35 };
-      case (#other) { profile.bodyweight * 0.4 };
-    };
-    let muscleMultiplier = switch (exercise.primaryMuscleGroup) {
-      case ("Quads") { 1.3 };
-      case ("Hamstrings") { 1.25 };
-      case ("Glutes") { 1.1 };
-      case ("Calves") { 1.1 };
-      case ("Core") { 0.3 };
-      case (_) { 1.0 };
-    };
-    let equipmentMultiplier = switch (exercise.equipmentType) {
-      case ("Barbell") { 1.2 };
-      case ("Dumbbell") { 0.8 };
-      case ("Machine") { 1.0 };
-      case ("Cable") { 0.9 };
-      case ("Bodyweight") { 0.0 };
-      case ("Band") { 0.4 };
-      case (_) { 0.8 };
-    };
-    let weight = baseWeight * muscleMultiplier * equipmentMultiplier;
-    Float.max(0.0, weight);
-  };
-
-  func principalHash(p : Principal) : Nat {
-    let blob = p.toBlob();
-    var hash : Nat = 0;
-    for (byte in blob.vals()) {
-      hash := (hash * 31 + byte.toNat()) % 1_000_000_007;
-    };
-    hash;
-  };
-
-  func shuffleArray<T>(arr : [T], caller : Principal) : [T] {
-    let seed = principalHash(caller) + shuffleCounter;
-    shuffleCounter += 1;
-    let size = arr.size();
-    let mutableArr : [var T] = arr.toVarArray();
-    var i = size;
-    while (i > 1) {
-      i -= 1;
-      let j = (seed + i) % (i + 1);
-      let temp = mutableArr[i];
-      mutableArr[i] := mutableArr[j];
-      mutableArr[j] := temp;
-    };
-    Array.tabulate(size, func(idx) { mutableArr[idx] });
-  };
-
   func getDefaultRecoveryState() : RecoveryState {
-    let now = Time.now();
+    let now = 0;
     let defaultRecovery : MuscleRecovery = {
       lastTrained = now - (72 * 3_600_000_000_000);
       recoveryPercentage = 100.0;
@@ -683,287 +682,6 @@ actor {
       hamstringsRecovery = defaultRecovery;
       glutesRecovery = defaultRecovery;
       calvesRecovery = defaultRecovery;
-    };
-  };
-
-  public shared ({ caller }) func generateLowerBodyWorkout() : async Result<WorkoutWithNote> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can generate workouts"));
-    };
-
-    let profile = switch (userProfiles.get(caller)) {
-      case (null) { return #err(#userProfileNotFound("User profile not found")) };
-      case (?p) { p };
-    };
-
-    let currentRecovery = switch (recoveryState.get(caller)) {
-      case (null) { getDefaultRecoveryState() };
-      case (?r) { refreshAllRecoveryPercentages(r) };
-    };
-
-    let quadsRequestedCount = getExerciseCountForGroup("Quads", currentRecovery);
-    let hamstringsRequestedCount = getExerciseCountForGroup("Hamstrings", currentRecovery);
-    let glutesRequestedCount = getExerciseCountForGroup("Glutes", currentRecovery);
-    let calvesRequestedCount = getExerciseCountForGroup("Calves", currentRecovery);
-    let coreRequestedCount = getExerciseCountForGroup("Core", currentRecovery);
-
-    let quadsSection = buildShuffledSectionFromArray(
-      caller, profile, exerciseLibrary, "Quads", quadsRequestedCount
-    );
-    Debug.print("DEBUG: Quads requested: " # quadsRequestedCount.toText() # " selected: " # quadsSection.size().toText());
-
-    let hamstringsSection = buildShuffledSectionFromArray(
-      caller, profile, exerciseLibrary, "Hamstrings", hamstringsRequestedCount
-    );
-    Debug.print("DEBUG: Hamstrings requested: " # hamstringsRequestedCount.toText() # " selected: " # hamstringsSection.size().toText());
-
-    let glutesSection = buildShuffledSectionFromArray(
-      caller, profile, exerciseLibrary, "Glutes", glutesRequestedCount
-    );
-    Debug.print("DEBUG: Glutes requested: " # glutesRequestedCount.toText() # " selected: " # glutesSection.size().toText());
-
-    let calvesSection = buildShuffledSectionFromArray(
-      caller, profile, exerciseLibrary, "Calves", calvesRequestedCount
-    );
-    Debug.print("DEBUG: Calves requested: " # calvesRequestedCount.toText() # " selected: " # calvesSection.size().toText());
-
-    let coreSection = buildShuffledSectionFromArray(
-      caller, profile, exerciseLibrary, "Core", coreRequestedCount
-    );
-
-    let totalLegCount = quadsSection.size() + hamstringsSection.size() + glutesSection.size() + calvesSection.size();
-
-    var allExercises : [WorkoutExercise] = [];
-    allExercises := allExercises.concat(quadsSection).concat(hamstringsSection).concat(glutesSection).concat(calvesSection).concat(coreSection);
-
-    Debug.print("DEBUG: Total pre-dedup exercises = " # allExercises.size().toText());
-
-    let finalExercises = uniqueByName(allExercises);
-    let finalLegCount = quadsSection.size() + hamstringsSection.size() + glutesSection.size() + calvesSection.size();
-
-    Debug.print("DEBUG: Post-dedup exercises = " # finalExercises.size().toText());
-    Debug.print("DEBUG: Post-dedup leg exercises = " # finalLegCount.toText());
-
-    let cappedExercises = if (finalExercises.size() > 8) {
-      Array.tabulate(8, func(i) { finalExercises[i] });
-    } else { finalExercises };
-    let totalVolume = cappedExercises.foldLeft(
-      0.0,
-      func(acc, we) { acc + (toF(we.sets) * toF(we.reps) * we.suggestedWeight) },
-    );
-
-    let note = if (cappedExercises.size() == 0) {
-      "All lower muscle groups recovering";
-    } else if (totalLegCount == 0) {
-      "Core-focused session (leg subgroups recovering)";
-    } else if (cappedExercises.size() <= 3) {
-      "Limited exercises due to muscle recovery";
-    } else {
-      "Full lower-body workout";
-    };
-
-    #ok({
-      exercises = cappedExercises;
-      timestamp = Time.now();
-      totalVolume;
-      note;
-    });
-  };
-
-  public shared ({ caller }) func generateFullBodyWorkout() : async Result<WorkoutWithNote> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can generate workouts"));
-    };
-    let profile = switch (userProfiles.get(caller)) {
-      case (null) { return #err(#userProfileNotFound("User profile not found")) };
-      case (?p) { p };
-    };
-    let currentRecovery = switch (recoveryState.get(caller)) {
-      case (null) { getDefaultRecoveryState() };
-      case (?r) { refreshAllRecoveryPercentages(r) };
-    };
-    let muscleGroupOrder = [
-      "Chest",
-      "Back",
-      "Shoulders",
-      "Arms",
-      "Quads",
-      "Hamstrings",
-      "Glutes",
-      "Calves",
-      "Core",
-    ];
-    var allExercises : [WorkoutExercise] = [];
-    for (group in muscleGroupOrder.vals()) {
-      let limit = getExerciseCountForGroup(group, currentRecovery);
-      if (limit > 0) {
-        let section = buildShuffledSectionFromArray(caller, profile, exerciseLibrary, group, limit);
-        allExercises := allExercises.concat(section);
-      };
-    };
-    allExercises := uniqueByName(allExercises);
-    let size = allExercises.size();
-    if (size == 0) {
-      return #err(#optimizationFailed("All muscle groups are under recovery. Please rest or try again later."));
-    };
-    let note = if (size < 10) {
-      "Reduced volume due to recovery constraints.";
-    } else { "" };
-    let totalVolume = allExercises.foldLeft(0.0, func(acc, we) {
-      acc + (toF(we.sets) * toF(we.reps) * we.suggestedWeight);
-    });
-    let workout : WorkoutWithNote = {
-      exercises = allExercises;
-      timestamp = Time.now();
-      totalVolume;
-      note;
-    };
-    #ok(workout);
-  };
-
-  public shared ({ caller }) func generateUpperBodyWorkout() : async Result<WorkoutWithNote> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can generate workouts"));
-    };
-    let profile = switch (userProfiles.get(caller)) {
-      case (null) { return #err(#userProfileNotFound("User profile not found")) };
-      case (?p) { p };
-    };
-    let currentRecovery = switch (recoveryState.get(caller)) {
-      case (null) { getDefaultRecoveryState() };
-      case (?r) { refreshAllRecoveryPercentages(r) };
-    };
-    let muscleGroupOrder = ["Chest", "Back", "Shoulders", "Arms", "Core"];
-    var allExercises : [WorkoutExercise] = [];
-    for (group in muscleGroupOrder.vals()) {
-      let limit = getExerciseCountForGroup(group, currentRecovery);
-      if (limit > 0) {
-        let section = buildShuffledSectionFromArray(caller, profile, exerciseLibrary, group, limit);
-        allExercises := allExercises.concat(section);
-      };
-    };
-    allExercises := uniqueByName(allExercises);
-    let size = allExercises.size();
-    if (size == 0) {
-      return #err(#optimizationFailed("All muscle groups are under recovery. Please rest or try again later."));
-    };
-    let note = if (size < 10) {
-      "Reduced volume due to recovery constraints.";
-    } else { "" };
-    let totalVolume = allExercises.foldLeft(0.0, func(acc, we) {
-      acc + (toF(we.sets) * toF(we.reps) * we.suggestedWeight);
-    });
-    let workout : WorkoutWithNote = {
-      exercises = allExercises;
-      timestamp = Time.now();
-      totalVolume;
-      note;
-    };
-    #ok(workout);
-  };
-
-  public query ({ caller }) func getAlternativeExercises(muscleGroup : Text) : async Result<[Exercise]> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can get alternative exercises"));
-    };
-    let alternatives = exerciseLibrary.filter(func(e) { toLower(e.primaryMuscleGroup) == toLower(muscleGroup) });
-    let shuffled = shuffleArray(alternatives, caller);
-    let limited = if (shuffled.size() > 15) {
-      Array.tabulate(15, func(i) { shuffled[i] });
-    } else { shuffled };
-    #ok(limited);
-  };
-
-  public query ({ caller }) func getWorkoutHistory() : async Result<[Workout]> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can view workout history"));
-    };
-    let history = switch (workoutHistory.get(caller)) {
-      case (null) { [] };
-      case (?h) { h.toArray() };
-    };
-    #ok(history);
-  };
-
-  public shared ({ caller }) func updateSuggestedWeightDuringSession(
-    exerciseName : Text, weight : Float, reps : Nat
-  ) : async Result<Float> {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      return #err(#unauthorized("Only authenticated users can update weights"));
-    };
-    let newWeight = if (reps > 12) { weight * 1.075 } else if (reps < 6) {
-      weight * 0.925;
-    } else { weight };
-    let userConfigs = switch (setConfigurations.get(caller)) {
-      case (null) { Map.empty<Text, SetConfiguration>() };
-      case (?configs) { configs };
-    };
-    let newConfig : SetConfiguration = {
-      weight = newWeight;
-      reps = 10;
-      sets = 3;
-    };
-    userConfigs.add(exerciseName, newConfig);
-    setConfigurations.add(caller, userConfigs);
-    #ok(newWeight);
-  };
-
-  system func preupgrade() {
-    stableState := ?{
-      var userProfiles = userProfiles.toArray();
-      var workoutHistory = workoutHistory.toArray().map(
-        func((k, v)) { (k, v.toArray()) }
-      );
-      var recoveryState = recoveryState.toArray();
-      var workoutSummaries = workoutSummaries.toArray().map(
-        func((k, v)) { (k, v.toArray()) }
-      );
-      var exerciseChanges = exerciseChanges.toArray().map(
-        func((k, v)) { (k, v.toArray()) }
-      );
-      var setConfigurations = setConfigurations.toArray().map(
-        func((k, v)) { (k, v.toArray()) }
-      );
-    };
-  };
-
-  system func postupgrade() {
-    switch (stableState) {
-      case (null) {};
-      case (?state) {
-        userProfiles.clear();
-        for ((k, v) in state.userProfiles.values()) {
-          userProfiles.add(k, v);
-        };
-        workoutHistory.clear();
-        for ((k, v) in state.workoutHistory.values()) {
-          workoutHistory.add(k, List.fromArray<Workout>(v));
-        };
-        recoveryState.clear();
-        for ((k, v) in state.recoveryState.values()) {
-          recoveryState.add(k, v);
-        };
-        workoutSummaries.clear();
-        for ((k, v) in state.workoutSummaries.values()) {
-          workoutSummaries.add(k, List.fromArray<WorkoutSummary>(v));
-        };
-        exerciseChanges.clear();
-        for ((k, v) in state.exerciseChanges.values()) {
-          exerciseChanges.add(k, List.fromArray<ExerciseChange>(v));
-        };
-        setConfigurations.clear();
-        for ((k, v) in state.setConfigurations.values()) {
-          let innerConfigs = v.foldLeft(
-            Map.empty<Text, SetConfiguration>(),
-            func(acc, (name, config)) {
-              acc.add(name, config);
-              acc;
-            },
-          );
-          setConfigurations.add(k, innerConfigs);
-        };
-        stableState := null;
-      };
     };
   };
 };

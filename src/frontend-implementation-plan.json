@@ -1,6 +1,84 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend: No changes (backend-only lower-body workout note logic fix)",
-  "requirements": []
+  "title": "Workout preview: enforce global muscle-group order and fix Lower Body/Core section rendering",
+  "requirements": [
+    {
+      "id": "REQ-9",
+      "summary": "Enforce the exact top-level muscle-group section order (Chest → Back → Arms → Legs → Core) in WorkoutPreviewPage when groups have exercises.",
+      "acceptanceCriteria": [
+        "Given any generated workout preview (Full Body, Upper Body, Lower Body, Lower Body + Core, and any other workout type), the UI renders muscle-group sections in this exact order when the group has at least one exercise: Chest, Back, Arms, Legs, Core.",
+        "If one or more of the ordered groups has zero exercises, that group is omitted without affecting the relative order of the remaining groups."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "operation": "modify",
+          "description": "Refactor workout preview grouping/rendering to build a deterministic list of top-level sections in the required order (Chest, Back, Arms, Legs, Core), omitting empty sections without shifting relative order of remaining required sections."
+        },
+        {
+          "path": "frontend/src/lib/workoutPreviewSections.ts",
+          "operation": "create",
+          "description": "Add a small utility to convert the raw workout list into ordered top-level preview sections (including optional nested subsections) so WorkoutPreviewPage can render in the required order consistently across workout types."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Render Legs as a single top-level section with ordered Quads/Hamstrings/Glutes/Calves subsections for Lower Body previews, and render Core after Legs using the user-provided JSX structure.",
+      "acceptanceCriteria": [
+        "On a Lower Body (and Lower Body + Core) preview, Quads/Hamstrings/Glutes/Calves exercises are not rendered as separate top-level sections; they appear only under a single top-level \"Legs\" section.",
+        "Within the \"Legs\" section, subsections appear in this order when present: Quads, Hamstrings, Glutes, Calves.",
+        "If the workout contains any exercises where exercise.primaryMuscleGroup === \"Core\", a \"Core\" section is displayed after the \"Legs\" section; otherwise, Core is omitted.",
+        "The Core section uses the exact JSX structure provided by the user (matching the existing style expectations) for listing Core exercises, including the suggestedWeight conditional and unit display logic."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "operation": "modify",
+          "description": "Update preview rendering so Quads/Hamstrings/Glutes/Calves are nested under a single top-level \"Legs\" section with subsections in the required order; ensure \"Core\" renders after \"Legs\" when Core exercises exist; implement the Core list using the exact user-provided JSX structure (including suggestedWeight conditional and unit display logic) while preserving existing look and feel."
+        },
+        {
+          "path": "frontend/src/lib/workoutPreviewSections.ts",
+          "operation": "modify",
+          "description": "Extend section-building utility to: (1) merge leg subgroups (Quads/Hamstrings/Glutes/Calves) into a single \"Legs\" top-level section with ordered subsections, and (2) surface Core as a separate top-level section after Legs when present."
+        }
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "summary": "Ensure unexpected muscle groups render only after Core in a stable deterministic order and never disrupt required ordering.",
+      "acceptanceCriteria": [
+        "Workout previews never display any top-level muscle group before Chest or between the required ordered groups when those required groups are present.",
+        "Any additional/unexpected muscle groups (if present) render after Core in a deterministic order (e.g., alphabetical), and the app does not crash."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/WorkoutPreviewPage.tsx",
+          "operation": "modify",
+          "description": "Adjust rendering to append any non-standard/unexpected top-level muscle groups only after Core, using a stable deterministic ordering (e.g., alphabetical by group label), and ensure missing/unknown groups do not cause runtime errors."
+        },
+        {
+          "path": "frontend/src/lib/workoutPreviewSections.ts",
+          "operation": "modify",
+          "description": "In the section-building logic, explicitly separate required ordered groups from 'other' groups; sort 'other' groups deterministically (e.g., localeCompare) and append them after Core."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "Prepare a new draft build/deploy checklist entry for the workout preview fixes and record the resulting draft version number after deployment.",
+      "acceptanceCriteria": [
+        "A new draft is successfully built and deployed with the updated frontend behavior.",
+        "The response includes the new draft version number for review/testing."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/DEPLOY_RETRY.md",
+          "operation": "modify",
+          "description": "Add a new dated retry entry describing the draft build trigger for: enforcing top-level muscle order + fixing Lower Body Legs nesting + Core visibility after Legs; include a placeholder line to record the new draft version number once the draft is built/deployed."
+        }
+      ]
+    }
+  ]
 }

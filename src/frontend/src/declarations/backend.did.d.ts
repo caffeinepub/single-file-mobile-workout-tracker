@@ -27,46 +27,38 @@ export interface Exercise {
 export type Gender = { 'other' : null } |
   { 'female' : null } |
   { 'male' : null };
+export interface LegSubgroupRecovery {
+  'legs' : MuscleRecovery,
+  'quads' : MuscleRecovery,
+  'hamstrings' : MuscleRecovery,
+  'glutes' : MuscleRecovery,
+  'calves' : MuscleRecovery,
+}
 export interface MuscleRecovery {
   'lastTrained' : bigint,
   'recoveryPercentage' : number,
 }
-export type Result = { 'ok' : number } |
+export interface RecoveryStateWithLegs {
+  'calvesRecovery' : MuscleRecovery,
+  'quadsRecovery' : MuscleRecovery,
+  'hamstringsRecovery' : MuscleRecovery,
+  'shoulders' : MuscleRecovery,
+  'arms' : MuscleRecovery,
+  'back' : MuscleRecovery,
+  'core' : MuscleRecovery,
+  'chest' : MuscleRecovery,
+  'legs' : MuscleRecovery,
+  'glutesRecovery' : MuscleRecovery,
+}
+export type Result = { 'ok' : null } |
   { 'err' : AppError };
-export type Result_1 = { 'ok' : null } |
+export type Result_1 = { 'ok' : [] | [UserProfile] } |
   { 'err' : AppError };
-export type Result_2 = { 'ok' : Array<Workout> } |
+export type Result_2 = { 'ok' : RecoveryStateWithLegs } |
   { 'err' : AppError };
-export type Result_3 = { 'ok' : [] | [UserProfile] } |
+export type Result_3 = { 'ok' : LegSubgroupRecovery } |
   { 'err' : AppError };
-export type Result_4 = {
-    'ok' : {
-      'calvesRecovery' : MuscleRecovery,
-      'quadsRecovery' : MuscleRecovery,
-      'hamstringsRecovery' : MuscleRecovery,
-      'shoulders' : MuscleRecovery,
-      'arms' : MuscleRecovery,
-      'back' : MuscleRecovery,
-      'core' : MuscleRecovery,
-      'chest' : MuscleRecovery,
-      'legs' : MuscleRecovery,
-      'glutesRecovery' : MuscleRecovery,
-    }
-  } |
-  { 'err' : AppError };
-export type Result_5 = {
-    'ok' : {
-      'legs' : MuscleRecovery,
-      'quads' : MuscleRecovery,
-      'hamstrings' : MuscleRecovery,
-      'glutes' : MuscleRecovery,
-      'calves' : MuscleRecovery,
-    }
-  } |
-  { 'err' : AppError };
-export type Result_6 = { 'ok' : Array<Exercise> } |
-  { 'err' : AppError };
-export type Result_7 = { 'ok' : WorkoutWithNote } |
+export type Result_4 = { 'ok' : WorkoutWithNote } |
   { 'err' : AppError };
 export interface SetData { 'weight' : number, 'reps' : bigint }
 export type TrainingFrequency = { 'threeDays' : null } |
@@ -86,11 +78,6 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export type WeightUnit = { 'kg' : null } |
   { 'lb' : null };
-export interface Workout {
-  'totalVolume' : number,
-  'exercises' : Array<WorkoutExercise>,
-  'timestamp' : bigint,
-}
 export interface WorkoutExercise {
   'setData' : Array<SetData>,
   'suggestedWeight' : number,
@@ -107,25 +94,16 @@ export interface WorkoutWithNote {
 export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'debugGetExerciseCounts' : ActorMethod<[], Array<[string, bigint]>>,
-  'generateFullBodyWorkout' : ActorMethod<[], Result_7>,
-  'generateLowerBodyWorkout' : ActorMethod<[], Result_7>,
-  'generateUpperBodyWorkout' : ActorMethod<[], Result_7>,
-  'getAlternativeExercises' : ActorMethod<[string], Result_6>,
-  'getCallerUserProfile' : ActorMethod<[], Result_3>,
+  'generateLowerBodyWorkout' : ActorMethod<[], Result_4>,
+  'getCallerUserProfile' : ActorMethod<[], Result_1>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getLegSubgroupRecovery' : ActorMethod<[], Result_5>,
-  'getRecoveryState' : ActorMethod<[], Result_4>,
-  'getUserProfile' : ActorMethod<[Principal], Result_3>,
-  'getWorkoutHistory' : ActorMethod<[], Result_2>,
+  'getLegSubgroupRecovery' : ActorMethod<[], Result_3>,
+  'getRecoveryState' : ActorMethod<[], Result_2>,
+  'getUserProfile' : ActorMethod<[Principal], Result_1>,
   'initializeAccessControl' : ActorMethod<[], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isTestRecoveryModeEnabled' : ActorMethod<[], boolean>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], Result_1>,
-  'saveWorkout' : ActorMethod<[Workout], Result_1>,
-  'updateSuggestedWeightDuringSession' : ActorMethod<
-    [string, number, bigint],
-    Result
-  >,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], Result>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

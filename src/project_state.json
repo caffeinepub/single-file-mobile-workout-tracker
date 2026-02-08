@@ -1,20 +1,57 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
-  "summary": "Fix workout exercise visibility/regression in Version 342: leg exercises missing in Full Body and Lower Body workouts. Apply a targeted backend change to getExerciseCountForGroup() recovery thresholds so Quads/Hamstrings/Glutes/Calves allow at least 1 exercise at >=30% recovery (Core unchanged) to restore leg selection/display.",
+  "projectStateVersion": 11,
+  "summary": "Fix workout exercise visibility/regression and frontend rendering: backend leg subgroup matching fixed via Text.toLowercase/Text.equal; now update workout preview UI so muscle groups render in a consistent order across ALL workout types (Chest → Back → Arms → Legs → Core), and ensure Lower Body preview shows a top-level Legs group (with Quads/Hamstrings/Glutes/Calves subsections) followed by a Core section when present; user requested forcing the UI change and building a new draft.",
   "architectural_notes": [
     "Lower Body workout generation logic depends on cappedExercises.size() and total/final leg exercise counts to produce user-facing note strings; note logic must match a strict 4-branch specification.",
     "Frontend Lower Body workout rendering must group exercises by primaryMuscleGroup and explicitly include a conditional Core section after leg subgroups.",
     "Leg exercise availability depends on getExerciseCountForGroup() recovery thresholds; for Quads/Hamstrings/Glutes/Calves, thresholds must allow at least 1 exercise when recovery >=30% (Core unchanged) to prevent legs from being filtered out entirely.",
-    "Lower Body workout note strings must exactly match the agreed 4-branch wording and decision order; remove redundant early empty-check (totalExerciseCount == 0) so emptiness is handled solely via cappedExercises.size() == 0 in the note logic."
+    "Lower Body workout note strings must exactly match the agreed 4-branch wording and decision order; remove redundant early empty-check (totalExerciseCount == 0) so emptiness is handled solely via cappedExercises.size() == 0 in the note logic.",
+    "Muscle-group comparisons in backend exercise filtering should use Motoko Text.toLowercase() + Text.equal() (not a custom ASCII-only toLower) to avoid silent mismatches that can drop Quads/Hamstrings/Glutes/Calves during workout generation.",
+    "Workout preview frontend must enforce a deterministic muscle-group display order across all workout types: Chest → Back → Arms → Legs → Core; for Lower Body specifically, Legs is a top-level group with Quads/Hamstrings/Glutes/Calves subsections and Core renders after Legs when present."
   ],
   "known_issues": [
     "Backend generateLowerBodyWorkout() currently has incorrect note logic (wrong strings/branches), duplicate empty checks, and uses <=2 instead of <=3 for limited-workout threshold.",
     "Frontend Lower Body workout UI currently does not display Core exercises; requires a conditional Core subsection after leg groups.",
-    "Version 342: Leg exercises are not appearing in Full Body and Lower Body workouts, likely due to overly strict recovery thresholds in getExerciseCountForGroup() for leg muscle groups (Quads/Hamstrings/Glutes/Calves)."
+    "Version 342: Leg exercises are not appearing in Full Body and Lower Body workouts, likely due to overly strict recovery thresholds in getExerciseCountForGroup() for leg muscle groups (Quads/Hamstrings/Glutes/Calves).",
+    "Likely root cause for missing leg exercises: backend filtering uses a custom toLower() for primaryMuscleGroup comparisons, which may mishandle non-ASCII/whitespace/encoding, resulting in zero matches for Quads/Hamstrings/Glutes/Calves.",
+    "Frontend workout preview screens do not consistently render muscle-group sections in the required order (Chest, Back, Arms, Legs, Core)."
   ],
   "isFixRequest": true,
-  "existing_features": [],
+  "existing_features": [
+    {
+      "id": "feature-build-and-deploy-a-new-draft-containing-the-backend-leg-filter-fix-and-report-the-newly-created-draft-version-number",
+      "title": "Build and deploy a new draft containing the backend leg-filter fix, and report the newly created draft version number.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-workout-preview-rendering-in-frontend-src-pages-workoutpreviewpage-tsx-so-that-muscle-group-sections-are-rendered-in-this-exact-top-level-order-when-they-have-exercises-chest-back-arms-legs-core",
+      "title": "Update the workout preview rendering in frontend/src/pages/WorkoutPreviewPage.tsx so that muscle-group sections are rendered in this exact top-level order when they have exercises: Chest → Back → Arms → Legs → Core.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-lower-body-workout-preview-rendering-so-that-legs-is-shown-as-a-single-top-level-section-that-contains-quads-hamstrings-glutes-and-calves-subsections-in-that-order-when-those-subgroups-have-exercises-and-render-the-core-section-after-the-legs-section-when-core-exercises-exist",
+      "title": "Fix Lower Body workout preview rendering so that Legs is shown as a single top-level section that contains Quads, Hamstrings, Glutes, and Calves subsections (in that order) when those subgroups have exercises, and render the Core section after the Legs section when Core exercises exist.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-any-muscle-groups-not-included-in-the-required-order-e-g-shoulders-or-any-unexpected-groups-returned-by-the-backend-do-not-break-ordering-render-them-only-after-core-in-a-stable-deterministic-order",
+      "title": "Ensure any muscle groups not included in the required order (e.g., Shoulders or any unexpected groups returned by the backend) do not break ordering; render them only after Core in a stable, deterministic order.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    }
+  ],
   "new_feature_requests": [
     {
       "id": "AR-1",
@@ -77,6 +114,42 @@
       "summary": "In backend/main.mo, within generateLowerBodyWorkout(), remove the first/duplicate early-return empty-check block that checks totalExerciseCount == 0. Preserve the remaining logic and behavior aside from removing that duplicated empty check.",
       "reqIds": [
         "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Backend: Fix leg subgroup matching by replacing the custom toLower() comparison in buildShuffledSectionFromArray() with native Text.toLowercase() + Text.equal() (keep all debug prints and logic identical; leave TEST_RECOVERY_MODE unchanged), then build/deploy a new draft for testing generateLowerBodyWorkout.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-11",
+      "summary": "In backend/main.mo, within buildShuffledSectionFromArray’s exercises.filter predicate, replace the existing custom lowercase comparison line with a native case-insensitive equality check using Text.toLowercase and Text.equal exactly as follows:\n\nlet matches = Text.equal(\n  Text.toLowercase(e.primaryMuscleGroup),\n  Text.toLowercase(group)\n);\n\nNo other changes are allowed inside buildShuffledSectionFromArray (all Debug.print statements and all other logic must remain byte-for-byte identical to the current project version).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Ensure TEST_RECOVERY_MODE remains set to true and unchanged in backend/main.mo as part of this update.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Frontend: Force-apply workout preview rendering changes across ALL workout types to (1) always display muscle groups in order Chest → Back → Arms → Legs → Core when present, (2) for Lower Body show a top-level \"Legs\" group containing Quads/Hamstrings/Glutes/Calves subsections, and (3) render Core AFTER Legs when Core exercises exist; then build/deploy a new draft for testing.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Build and deploy a new draft containing the frontend workout preview fixes (Core visible in Lower Body + enforced muscle order) and report the newly created draft version number.",
+      "reqIds": [
+        "REQ-12"
       ],
       "status": "pending"
     }

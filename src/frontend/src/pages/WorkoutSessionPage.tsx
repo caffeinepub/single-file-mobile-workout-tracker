@@ -72,7 +72,7 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
   const saveWorkoutMutation = useSaveWorkout();
   const { data: workoutHistory = [] } = useGetWorkoutHistory();
   const saveSetConfig = useSaveSetConfiguration();
-  const getSetConfig = useGetSetConfiguration();
+  const { data: setConfigurations = {} } = useGetSetConfiguration();
   const clearSetConfigs = useClearSetConfigurations();
   const updateSuggestedWeight = useUpdateSuggestedWeightDuringSession();
 
@@ -167,7 +167,7 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
   }, [sessionRestored]);
 
   useEffect(() => {
-    const initializeLogs = async () => {
+    const initializeLogs = () => {
       // Skip initialization if session was restored
       if (sessionRestored) return;
 
@@ -178,27 +178,17 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
         const ex = workout[idx];
         const exerciseName = ex.exercise.name;
         
-        try {
-          const savedConfig = await getSetConfig.mutateAsync(exerciseName);
-          
-          if (savedConfig) {
-            const sets = Number(savedConfig.sets);
-            initialSetsCount[idx] = sets;
-            initialLogs[idx] = Array(sets).fill(null).map(() => ({
-              weight: formatWeight(savedConfig.weight),
-              reps: String(savedConfig.reps),
-              completed: false,
-            }));
-          } else {
-            const sets = Number(ex.sets);
-            initialSetsCount[idx] = sets;
-            initialLogs[idx] = Array(sets).fill(null).map(() => ({
-              weight: formatWeight(ex.suggestedWeight),
-              reps: String(ex.reps),
-              completed: false,
-            }));
-          }
-        } catch (error) {
+        const savedConfig = setConfigurations[exerciseName];
+        
+        if (savedConfig) {
+          const sets = Number(savedConfig.sets);
+          initialSetsCount[idx] = sets;
+          initialLogs[idx] = Array(sets).fill(null).map(() => ({
+            weight: formatWeight(savedConfig.weight),
+            reps: String(savedConfig.reps),
+            completed: false,
+          }));
+        } else {
           const sets = Number(ex.sets);
           initialSetsCount[idx] = sets;
           initialLogs[idx] = Array(sets).fill(null).map(() => ({
@@ -214,7 +204,7 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
     };
 
     initializeLogs();
-  }, [workout, sessionRestored]);
+  }, [workout, sessionRestored, setConfigurations]);
 
   // Save session state whenever it changes
   useEffect(() => {
@@ -519,7 +509,7 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
     const primaryGroup = exercise.exercise.primaryMuscleGroup;
     
     // For Lower Body workouts, aggregate leg muscle groups into "Legs"
-    if (workoutType === 'lowerBody') {
+    if (workoutType === 'lowerBody' || workoutType === 'lowerBodyWithCore') {
       const legGroups = ['Quads', 'Hamstrings', 'Glutes', 'Calves'];
       if (legGroups.includes(primaryGroup)) {
         return 'Legs';
@@ -529,93 +519,20 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
     return primaryGroup;
   };
 
-  const checkMuscleGroupTransition = (currentIdx: number, nextIdx: number): boolean => {
-    if (nextIdx >= workout.length) return false;
-    
-    const currentGroup = getMuscleGroupForTransition(workout[currentIdx]).toLowerCase();
-    const nextGroup = getMuscleGroupForTransition(workout[nextIdx]).toLowerCase();
-    
-    return currentGroup !== nextGroup;
-  };
-
-  const handleLogSet = async () => {
+  const handleCompleteSet = async () => {
     if (!currentLog) return;
 
-    const weight = parseFloat(currentLog.weight);
+    handleVibrate(20);
+    
+    const weight = parseWeight(currentLog.weight);
     const reps = parseInt(currentLog.reps);
-
-    if (isNaN(weight) || weight <= 0) {
-      toast.error('Please enter a valid weight');
-      return;
-    }
-    if (isNaN(reps) || reps <= 0) {
-      toast.error('Please enter valid reps');
+    
+    if (isNaN(weight) || isNaN(reps) || reps <= 0) {
+      toast.error('Please enter valid weight and reps');
       return;
     }
 
-    // Call backend to update suggested weight based on performance
-    try {
-      const weightInKg = parseWeight(currentLog.weight);
-      const newSuggestedWeight = await updateSuggestedWeight.mutateAsync({
-        exerciseName: currentExercise.exercise.name,
-        weight: weightInKg,
-        reps: reps,
-      });
-
-      // Update the workout state with new suggested weight
-      const oldWeight = currentExercise.suggestedWeight;
-      if (newSuggestedWeight !== oldWeight) {
-        setWorkout(prev => prev.map((ex, idx) => 
-          idx === currentExerciseIdx 
-            ? { ...ex, suggestedWeight: newSuggestedWeight }
-            : ex
-        ));
-
-        // Update remaining sets with new suggested weight
-        setExerciseLogs(prev => ({
-          ...prev,
-          [currentExerciseIdx]: prev[currentExerciseIdx].map((log, idx) => 
-            idx > currentSetIdx && !log.completed
-              ? { ...log, weight: formatWeight(newSuggestedWeight) }
-              : log
-          ),
-        }));
-
-        // Show visual feedback
-        const direction = newSuggestedWeight > oldWeight ? 'up' : 'down';
-        setWeightChangeIndicator(direction);
-        setTimeout(() => setWeightChangeIndicator(null), 2000);
-
-        const changePercent = Math.abs(((newSuggestedWeight - oldWeight) / oldWeight) * 100).toFixed(1);
-        const message = direction === 'up' 
-          ? `💪 Weight increased by ${changePercent}%!`
-          : `⚡ Weight adjusted by ${changePercent}%`;
-        
-        toast.success(message, { duration: 3000 });
-      }
-    } catch (error) {
-      console.log('Failed to update suggested weight:', error);
-      // Continue with set logging even if weight update fails
-    }
-
-    try {
-      await saveSetConfig.mutateAsync({
-        exerciseName: currentExercise.exercise.name,
-        config: {
-          weight: parseWeight(currentLog.weight),
-          reps: BigInt(reps),
-          sets: BigInt(totalSets),
-        },
-      });
-    } catch (error) {
-      console.log('Failed to save set configuration:', error);
-    }
-
-    const pr = checkForPR(currentExercise.exercise.name, parseWeight(currentLog.weight), reps);
-    if (pr) {
-      triggerPRCelebration(pr);
-    }
-
+    // Mark set as completed
     setExerciseLogs(prev => ({
       ...prev,
       [currentExerciseIdx]: prev[currentExerciseIdx].map((log, idx) => 
@@ -623,336 +540,251 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
       ),
     }));
 
-    handleVibrate(20);
-
+    // Show set completed feedback
     setShowSetCompleted(true);
-    setTimeout(() => {
-      setShowSetCompleted(false);
-      
-      // Check if this is the last set of the current exercise
-      if (currentSetIdx === totalSets - 1) {
-        // Check if we're transitioning to a new muscle group
-        if (currentExerciseIdx < workout.length - 1 && checkMuscleGroupTransition(currentExerciseIdx, currentExerciseIdx + 1)) {
-          setCurrentMuscleGroup(getMuscleGroupForTransition(workout[currentExerciseIdx]));
-          setNextMuscleGroup(getMuscleGroupForTransition(workout[currentExerciseIdx + 1]));
+    setTimeout(() => setShowSetCompleted(false), 1000);
+
+    // Check for PR
+    const pr = checkForPR(currentExercise.exercise.name, weight, reps);
+    if (pr) {
+      triggerPRCelebration(pr);
+    }
+
+    // Update suggested weight based on performance
+    try {
+      const newSuggestedWeight = await updateSuggestedWeight.mutateAsync({
+        exerciseName: currentExercise.exercise.name,
+        weight,
+        reps,
+      });
+
+      const oldWeight = currentExercise.suggestedWeight;
+      if (newSuggestedWeight !== oldWeight) {
+        setWorkout(prev => prev.map((ex, idx) =>
+          idx === currentExerciseIdx
+            ? { ...ex, suggestedWeight: newSuggestedWeight }
+            : ex
+        ));
+
+        // Update remaining sets with new suggested weight
+        setExerciseLogs(prev => ({
+          ...prev,
+          [currentExerciseIdx]: prev[currentExerciseIdx].map((log, idx) =>
+            idx > currentSetIdx && !log.completed
+              ? { ...log, weight: formatWeight(newSuggestedWeight) }
+              : log
+          ),
+        }));
+
+        const direction = newSuggestedWeight > oldWeight ? 'up' : 'down';
+        setWeightChangeIndicator(direction);
+        setTimeout(() => setWeightChangeIndicator(null), 3000);
+
+        const changePercent = Math.abs(((newSuggestedWeight - oldWeight) / oldWeight) * 100).toFixed(1);
+        toast.info(
+          `Weight adjusted ${direction === 'up' ? '↑' : '↓'} ${changePercent}% for next set`,
+          { duration: 3000 }
+        );
+      }
+    } catch (error) {
+      console.error('Failed to update suggested weight:', error);
+    }
+
+    // Save set configuration for future workouts
+    try {
+      await saveSetConfig.mutateAsync({
+        exerciseName: currentExercise.exercise.name,
+        config: {
+          weight,
+          reps: BigInt(reps),
+          sets: BigInt(totalSets),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to save set configuration:', error);
+    }
+
+    // Check if this was the last set of the exercise
+    if (currentSetIdx >= totalSets - 1) {
+      // Check if moving to a different muscle group
+      if (currentExerciseIdx < workout.length - 1) {
+        const currentMuscleGroup = getMuscleGroupForTransition(currentExercise);
+        const nextExercise = workout[currentExerciseIdx + 1];
+        const nextMuscleGroup = getMuscleGroupForTransition(nextExercise);
+
+        if (currentMuscleGroup !== nextMuscleGroup) {
+          setCurrentMuscleGroup(currentMuscleGroup);
+          setNextMuscleGroup(nextMuscleGroup);
           setMuscleGroupRestTimer(muscleGroupRestInterval);
           setIsMuscleGroupTimerRunning(true);
-          toast.success(`Muscle group complete! ${Number(userProfile.muscleGroupRestInterval)} minute rest before next group.`);
-        } else {
-          setRestTimer(defaultRestTime);
-          setIsTimerRunning(true);
+          toast.info(`Transitioning from ${currentMuscleGroup} to ${nextMuscleGroup}. Take ${Number(userProfile.muscleGroupRestInterval)} minutes rest.`, {
+            duration: 5000,
+          });
+          return;
         }
-      } else {
-        setRestTimer(defaultRestTime);
-        setIsTimerRunning(true);
       }
-    }, 1000);
+      
+      // Move to next exercise
+      if (currentExerciseIdx < workout.length - 1) {
+        setCurrentExerciseIdx(currentExerciseIdx + 1);
+        setCurrentSetIdx(0);
+        toast.success('Exercise complete! Moving to next exercise.');
+      } else {
+        // Workout complete
+        toast.success('🎉 Workout complete! Great job!', { duration: 5000 });
+      }
+    } else {
+      // Start rest timer for next set
+      setRestTimer(defaultRestTime);
+      setIsTimerRunning(true);
+    }
   };
 
   const handleAutoAdvance = () => {
     if (currentSetIdx < totalSets - 1) {
       setCurrentSetIdx(currentSetIdx + 1);
-      toast.success('Rest complete! Ready for next set.');
-    } else if (currentExerciseIdx < workout.length - 1) {
-      setCurrentExerciseIdx(currentExerciseIdx + 1);
-      setCurrentSetIdx(0);
-      toast.success('Exercise complete! Moving to next exercise.');
-    } else {
-      toast.success('Workout complete! Great job!');
-    }
-  };
-
-  const handleNextExercise = () => {
-    if (currentExerciseIdx < workout.length - 1) {
-      handleVibrate();
-      setCurrentExerciseIdx(currentExerciseIdx + 1);
-      setCurrentSetIdx(0);
-      setRestTimer(0);
-      setIsTimerRunning(false);
-      setMuscleGroupRestTimer(0);
-      setIsMuscleGroupTimerRunning(false);
     }
   };
 
   const handleSkipRest = () => {
-    handleVibrate();
-    setRestTimer(0);
+    handleVibrate(10);
     setIsTimerRunning(false);
+    setRestTimer(0);
     handleAutoAdvance();
   };
 
   const handleSkipMuscleGroupRest = () => {
-    handleVibrate();
-    setMuscleGroupRestTimer(0);
+    handleVibrate(10);
     setIsMuscleGroupTimerRunning(false);
-    toast.success('Muscle group rest skipped!');
-  };
-
-  const addTime = () => {
-    handleVibrate();
-    setRestTimer(prev => prev + 30);
-  };
-
-  const addMuscleGroupTime = () => {
-    handleVibrate();
-    setMuscleGroupRestTimer(prev => prev + 60);
-  };
-
-  const handleChangeClick = () => {
-    handleVibrate();
-    setChangeModalOpen(true);
-  };
-
-  const handleExerciseSelected = (newExercise: Exercise) => {
-    onExerciseChange(currentExerciseIdx, newExercise);
-    const sets = Number(currentExercise.sets);
-    const newLogs = Array(sets).fill(null).map(() => ({
-      weight: formatWeight(currentExercise.suggestedWeight),
-      reps: String(currentExercise.reps),
-      completed: false,
-    }));
-    setExerciseLogs(prev => ({
-      ...prev,
-      [currentExerciseIdx]: newLogs,
-    }));
-    setCustomSetsCount(prev => ({
-      ...prev,
-      [currentExerciseIdx]: sets,
-    }));
-    setCurrentSetIdx(0);
-    setRestTimer(0);
-    setIsTimerRunning(false);
     setMuscleGroupRestTimer(0);
-    setIsMuscleGroupTimerRunning(false);
+    if (currentExerciseIdx < workout.length - 1) {
+      setCurrentExerciseIdx(currentExerciseIdx + 1);
+      setCurrentSetIdx(0);
+    }
   };
 
-  const handleDone = async () => {
+  const handlePreviousSet = () => {
+    handleVibrate(10);
+    if (currentSetIdx > 0) {
+      setCurrentSetIdx(currentSetIdx - 1);
+    } else if (currentExerciseIdx > 0) {
+      setCurrentExerciseIdx(currentExerciseIdx - 1);
+      const prevExerciseSets = customSetsCount[currentExerciseIdx - 1] || Number(workout[currentExerciseIdx - 1].sets);
+      setCurrentSetIdx(prevExerciseSets - 1);
+    }
+  };
+
+  const handleNextSet = () => {
+    handleVibrate(10);
+    if (currentSetIdx < totalSets - 1) {
+      setCurrentSetIdx(currentSetIdx + 1);
+    } else if (currentExerciseIdx < workout.length - 1) {
+      setCurrentExerciseIdx(currentExerciseIdx + 1);
+      setCurrentSetIdx(0);
+    }
+  };
+
+  const handleFinishWorkout = async () => {
     handleVibrate(30);
-
-    let totalVolume = 0;
-    const exercisesWithData = workout.map((ex, idx) => {
+    
+    const completedExercises: WorkoutExercise[] = workout.map((ex, idx) => {
       const logs = exerciseLogs[idx] || [];
-      const setData: SetData[] = logs
-        .filter(log => log.completed)
-        .map(log => {
-          const weight = parseWeight(log.weight);
-          const reps = parseInt(log.reps) || 0;
-          totalVolume += weight * reps;
-          return { weight, reps };
-        });
-
+      const completedSets = logs.filter(log => log.completed);
+      
       return {
         ...ex,
-        setData,
+        sets: completedSets.length,
+        setData: completedSets.map(log => ({
+          weight: parseWeight(log.weight),
+          reps: parseInt(log.reps),
+        })),
       };
-    });
+    }).filter(ex => ex.sets > 0);
+
+    if (completedExercises.length === 0) {
+      toast.error('No sets completed. Cannot save workout.');
+      return;
+    }
+
+    const totalVolume = completedExercises.reduce((sum, ex) => {
+      return sum + ex.setData.reduce((exSum, set) => exSum + (set.weight * set.reps), 0);
+    }, 0);
 
     const workoutData = {
-      exercises: exercisesWithData,
+      exercises: completedExercises,
       timestamp: BigInt(Date.now() * 1_000_000),
       totalVolume,
     };
 
     try {
       await saveWorkoutMutation.mutateAsync(workoutData);
-      
-      try {
-        await clearSetConfigs.mutateAsync();
-      } catch (error) {
-        console.log('Failed to clear set configurations:', error);
-      }
-
-      // Clear session storage after successful save
       clearWorkoutSession();
-
-      handleVibrate(50);
-      toast.success('🎉 Workout saved successfully!', {
-        duration: 3000,
-      });
-      
-      // Release wake lock before navigating back
-      await releaseLock();
-      
-      onBack();
+      await clearSetConfigs.mutateAsync();
+      playVictorySound();
+      createConfetti();
+      toast.success('🎉 Workout saved successfully!', { duration: 3000 });
+      setTimeout(() => onBack(), 1500);
     } catch (error) {
+      console.error('Failed to save workout:', error);
       toast.error('Failed to save workout. Please try again.');
-      console.error('Workout save error:', error);
     }
   };
 
-  const totalCompletedSets = Object.values(exerciseLogs).reduce(
-    (sum, logs) => sum + logs.filter(log => log.completed).length,
-    0
-  );
-  const totalAllSets = Object.values(customSetsCount).reduce((sum, count) => sum + count, 0) || 
-                       workout.reduce((sum, ex) => sum + Number(ex.sets), 0);
-  const progressPercent = totalAllSets > 0 ? (totalCompletedSets / totalAllSets) * 100 : 0;
+  const handleChangeExercise = () => {
+    handleVibrate(10);
+    setChangeModalOpen(true);
+  };
 
-  const isLastSet = currentExerciseIdx === workout.length - 1 && currentSetIdx === totalSets - 1;
-  const allSetsCompleted = totalCompletedSets === totalAllSets;
+  const handleExerciseSelected = (newExercise: Exercise) => {
+    onExerciseChange(currentExerciseIdx, newExercise);
+    
+    // Update local workout state
+    setWorkout(prev => prev.map((ex, idx) =>
+      idx === currentExerciseIdx
+        ? {
+            ...ex,
+            exercise: newExercise,
+            suggestedWeight: ex.suggestedWeight,
+          }
+        : ex
+    ));
+
+    // Reset logs for this exercise
+    const sets = totalSets;
+    setExerciseLogs(prev => ({
+      ...prev,
+      [currentExerciseIdx]: Array(sets).fill(null).map(() => ({
+        weight: formatWeight(workout[currentExerciseIdx].suggestedWeight),
+        reps: String(workout[currentExerciseIdx].reps),
+        completed: false,
+      })),
+    }));
+
+    toast.success(`Exercise changed to ${newExercise.name}`);
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const progress = ((currentExerciseIdx * 100 + ((currentSetIdx + 1) / totalSets) * 100) / workout.length);
 
   if (!currentExercise) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Loading workout...</p>
+        </div>
+      </div>
+    );
   }
-
-  const timerProgress = defaultRestTime > 0 ? ((defaultRestTime - restTimer) / defaultRestTime) * 100 : 0;
-  const circumference = 2 * Math.PI * 140;
-  const strokeDashoffset = circumference - (timerProgress / 100) * circumference;
-
-  const muscleGroupTimerProgress = muscleGroupRestInterval > 0 ? ((muscleGroupRestInterval - muscleGroupRestTimer) / muscleGroupRestInterval) * 100 : 0;
-  const muscleGroupStrokeDashoffset = circumference - (muscleGroupTimerProgress / 100) * circumference;
-
-  // Determine wake lock indicator display
-  const getWakeLockIndicator = () => {
-    if (wakeLockStatus === 'unsupported') {
-      return null; // Don't show anything if unsupported
-    }
-
-    if (isLocked) {
-      return (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/20 border border-primary/30">
-          <Eye className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-semibold text-primary">Screen kept awake</span>
-        </div>
-      );
-    }
-
-    if (wakeLockStatus === 'error' || wakeLockStatus === 'released') {
-      return (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/30">
-          <AlertCircle className="h-3.5 w-3.5 text-yellow-500" />
-          <span className="text-xs font-semibold text-yellow-500">Screen may sleep</span>
-        </div>
-      );
-    }
-
-    return null;
-  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {showPRBanner && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[10001] animate-in slide-in-from-top duration-500">
-          <div className="bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground px-8 py-4 rounded-full shadow-glow-primary border-4 border-background">
-            <p className="text-3xl font-black tracking-wider">🎉 NEW PR! 🎉</p>
-          </div>
-        </div>
-      )}
-
-      {showSetCompleted && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 animate-in fade-in duration-300">
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-primary shadow-glow-primary">
-              <Check className="h-20 w-20 text-primary-foreground" />
-            </div>
-            <p className="text-4xl font-bold text-primary">Set Completed ✓</p>
-          </div>
-        </div>
-      )}
-
-      {/* Weight Change Indicator */}
-      {weightChangeIndicator && (
-        <div className="fixed top-32 left-1/2 transform -translate-x-1/2 z-[10001] animate-in slide-in-from-top duration-300">
-          <div className={`flex items-center gap-2 px-6 py-3 rounded-full shadow-glow-primary border-2 ${
-            weightChangeIndicator === 'up' 
-              ? 'bg-green-500/20 border-green-500/50 text-green-400' 
-              : 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-          }`}>
-            {weightChangeIndicator === 'up' ? (
-              <TrendingUp className="h-6 w-6" />
-            ) : (
-              <TrendingDown className="h-6 w-6" />
-            )}
-            <span className="text-lg font-bold">
-              {weightChangeIndicator === 'up' ? 'Weight Increased!' : 'Weight Adjusted'}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Full-Screen Muscle Group Rest Timer Modal */}
-      {isMuscleGroupTimerRunning && muscleGroupRestTimer > 0 && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#0F0F0F] animate-in fade-in duration-300">
-          <div className="flex flex-col items-center justify-center w-full h-full px-6 py-12 space-y-12">
-            <div className="text-center space-y-4">
-              <h2 className="text-3xl font-bold text-primary">Muscle Group Transition</h2>
-              <p className="text-xl text-muted-foreground">Rest before next muscle group</p>
-            </div>
-
-            <div className="flex items-center justify-center gap-8">
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground uppercase tracking-wider">Current</p>
-                <Badge variant="default" className="text-2xl px-6 py-3 bg-primary/20 text-primary border-primary/30">
-                  {currentMuscleGroup}
-                </Badge>
-              </div>
-              
-              <ArrowRight className="h-12 w-12 text-primary animate-pulse" />
-              
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground uppercase tracking-wider">Next</p>
-                <Badge variant="default" className="text-2xl px-6 py-3 bg-primary/20 text-primary border-primary/30">
-                  {nextMuscleGroup}
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="relative">
-              <svg className="transform -rotate-90" width="320" height="320">
-                <circle
-                  cx="160"
-                  cy="160"
-                  r="140"
-                  stroke="rgba(255, 255, 255, 0.1)"
-                  strokeWidth="12"
-                  fill="none"
-                />
-                <circle
-                  cx="160"
-                  cy="160"
-                  r="140"
-                  stroke="#229ED9"
-                  strokeWidth="12"
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={muscleGroupStrokeDashoffset}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000 ease-linear drop-shadow-[0_0_10px_rgba(34,158,217,0.5)]"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-8xl font-black tabular-nums">
-                    {Math.floor(muscleGroupRestTimer / 60)}:{String(muscleGroupRestTimer % 60).padStart(2, '0')}
-                  </div>
-                  <div className="text-xl text-muted-foreground mt-2 font-semibold">Rest Time</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 w-full max-w-md">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={addMuscleGroupTime}
-                className="flex-1 h-16 text-lg font-bold bg-white/5 border-white/20 hover:bg-white/10 active:scale-95 rounded-2xl tap-target transition-all hover:shadow-glow-primary"
-              >
-                <Plus className="mr-2 h-6 w-6" />
-                +1 min
-              </Button>
-              <Button
-                variant="default"
-                size="lg"
-                onClick={handleSkipMuscleGroupRest}
-                className="flex-1 h-16 text-lg font-bold bg-primary hover:bg-primary/90 active:scale-95 rounded-2xl tap-target transition-all hover:shadow-glow-primary"
-              >
-                Skip Rest
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <div className="container px-4">
           <div className="flex h-16 items-center justify-between">
@@ -961,327 +793,326 @@ export default function WorkoutSessionPage({ userProfile, workout: initialWorkou
               size="icon"
               onClick={() => {
                 handleVibrate();
-                onBack();
+                if (confirm('Are you sure you want to exit? Your progress will be saved.')) {
+                  onBack();
+                }
               }}
-              className="h-10 w-10 hover:bg-white/10 active:scale-90 rounded-2xl tap-target transition-all hover:shadow-glow-primary"
+              className="h-10 w-10 hover:bg-white/10 active:scale-90 rounded-2xl tap-target transition-all"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex-1 px-4">
-              <div className="flex items-center justify-between text-sm mb-1.5 text-muted-foreground">
-                <span>Exercise {currentExerciseIdx + 1} of {workout.length}</span>
-                <span>{Math.round(progressPercent)}%</span>
-              </div>
-              <Progress value={progressPercent} className="h-1.5 bg-white/10" />
+              <Progress value={progress} className="h-2" />
+              <p className="mt-1 text-center text-xs text-muted-foreground">
+                Exercise {currentExerciseIdx + 1} of {workout.length}
+              </p>
             </div>
-            {getWakeLockIndicator()}
             <Button
-              onClick={handleDone}
-              disabled={saveWorkoutMutation.isPending}
               variant="default"
-              size="default"
-              className="h-10 px-5 text-sm bg-primary hover:bg-primary/90 active:scale-90 rounded-2xl tap-target transition-all hover:shadow-glow-primary ml-2"
+              size="sm"
+              onClick={handleFinishWorkout}
+              className="hover:bg-primary/90 active:scale-90 rounded-2xl tap-target transition-all"
             >
-              {saveWorkoutMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Done'
-              )}
+              Finish
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="container max-w-2xl px-4 py-6">
-          <div className="text-center space-y-4 mb-8">
-            <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight">
-              {currentExercise.exercise.name}
-            </h1>
-            <p className="text-4xl md:text-5xl font-bold text-primary">
-              Set {currentSetIdx + 1} of {totalSets}
-            </p>
-          </div>
-
-          {restTimer > 0 && !isMuscleGroupTimerRunning ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-8">
-              <div className="relative">
-                <svg className="transform -rotate-90" width="320" height="320">
-                  <circle
-                    cx="160"
-                    cy="160"
-                    r="140"
-                    stroke="rgba(255, 255, 255, 0.1)"
-                    strokeWidth="12"
-                    fill="none"
-                  />
-                  <circle
-                    cx="160"
-                    cy="160"
-                    r="140"
-                    stroke="#4fc3f7"
-                    strokeWidth="12"
-                    fill="none"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    className="transition-all duration-1000 ease-linear drop-shadow-[0_0_10px_rgba(79,195,247,0.5)]"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-8xl font-black tabular-nums">
-                      {Math.floor(restTimer / 60)}:{String(restTimer % 60).padStart(2, '0')}
-                    </div>
-                    <div className="text-xl text-muted-foreground mt-2 font-semibold">Rest Time</div>
-                  </div>
-                </div>
+      {/* PR Banner */}
+      {showPRBanner && (
+        <div className="fixed top-20 left-0 right-0 z-50 mx-4 animate-in slide-in-from-top">
+          <Card className="border-2 border-primary bg-primary/10">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-2xl">🎉</span>
+                <span className="text-lg font-bold text-primary">NEW PERSONAL RECORD!</span>
+                <span className="text-2xl">🎉</span>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-              <div className="flex gap-4 w-full max-w-md">
+      {/* Set Completed Feedback */}
+      {showSetCompleted && (
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 animate-in zoom-in">
+          <div className="rounded-full bg-green-500 p-8">
+            <Check className="h-16 w-16 text-white" />
+          </div>
+        </div>
+      )}
+
+      {/* Weight Change Indicator */}
+      {weightChangeIndicator && (
+        <div className="fixed top-24 right-4 z-50 animate-in slide-in-from-right">
+          <Badge variant="default" className="text-lg px-4 py-2">
+            {weightChangeIndicator === 'up' ? (
+              <>
+                <TrendingUp className="mr-2 h-5 w-5" />
+                Weight Increased
+              </>
+            ) : (
+              <>
+                <TrendingDown className="mr-2 h-5 w-5" />
+                Weight Decreased
+              </>
+            )}
+          </Badge>
+        </div>
+      )}
+
+      {/* Muscle Group Rest Timer */}
+      {isMuscleGroupTimerRunning && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-background/95 backdrop-blur-sm">
+          <Card className="w-full max-w-md mx-4 border-2 border-primary">
+            <CardContent className="py-8 text-center space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Muscle Group Transition</h2>
+                <p className="text-muted-foreground">
+                  {currentMuscleGroup} → {nextMuscleGroup}
+                </p>
+              </div>
+              <div className="text-6xl font-bold text-primary">
+                {formatTime(muscleGroupRestTimer)}
+              </div>
+              <div className="space-y-2">
                 <Button
-                  variant="outline"
                   size="lg"
-                  onClick={addTime}
-                  className="flex-1 h-16 text-lg font-bold bg-white/5 border-white/20 hover:bg-white/10 active:scale-95 rounded-2xl tap-target transition-all hover:shadow-glow-primary"
+                  onClick={handleSkipMuscleGroupRest}
+                  className="w-full"
                 >
-                  <Plus className="mr-2 h-6 w-6" />
-                  +30s
-                </Button>
-                <Button
-                  variant="default"
-                  size="lg"
-                  onClick={handleSkipRest}
-                  className="flex-1 h-16 text-lg font-bold bg-primary hover:bg-primary/90 active:scale-95 rounded-2xl tap-target transition-all hover:shadow-glow-primary"
-                >
+                  <SkipForward className="mr-2 h-5 w-5" />
                   Skip Rest
                 </Button>
               </div>
-            </div>
-          ) : !isMuscleGroupTimerRunning && (
-            <>
-              {currentLog && !currentLog.completed && (
-                <div className="space-y-6 py-8">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-3">
-                      <Label htmlFor="weight" className="text-lg font-bold text-muted-foreground">
-                        Weight ({userProfile.weightUnit})
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="weight"
-                          type="text"
-                          inputMode="decimal"
-                          value={currentLog.weight}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                              updateCurrentLog('weight', value);
-                            }
-                          }}
-                          onBlur={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || parseFloat(value) === 0) {
-                              updateCurrentLog('weight', '0');
-                            }
-                          }}
-                          className="h-20 text-3xl text-center font-bold bg-white/5 border-white/20 rounded-2xl pr-10 transition-all focus:shadow-glow-primary"
-                        />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => incrementValue('weight')}
-                            className="tap-target flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-90 transition-all hover:shadow-glow-primary"
-                          >
-                            <ChevronUp className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => decrementValue('weight')}
-                            className="tap-target flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-90 transition-all hover:shadow-glow-primary"
-                          >
-                            <ChevronDown className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-                    <div className="space-y-3">
-                      <Label htmlFor="reps" className="text-lg font-bold text-muted-foreground">
-                        Reps
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="reps"
-                          type="text"
-                          inputMode="numeric"
-                          value={currentLog.reps}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || /^\d+$/.test(value)) {
-                              updateCurrentLog('reps', value);
-                            }
-                          }}
-                          onBlur={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || parseInt(value) === 0) {
-                              updateCurrentLog('reps', '0');
-                            }
-                          }}
-                          className="h-20 text-3xl text-center font-bold bg-white/5 border-white/20 rounded-2xl pr-10 transition-all focus:shadow-glow-primary"
-                        />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => incrementValue('reps')}
-                            className="tap-target flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-90 transition-all hover:shadow-glow-primary"
-                          >
-                            <ChevronUp className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => decrementValue('reps')}
-                            className="tap-target flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-90 transition-all hover:shadow-glow-primary"
-                          >
-                            <ChevronDown className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label htmlFor="sets" className="text-lg font-bold text-muted-foreground">
-                        Sets
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="sets"
-                          type="text"
-                          inputMode="numeric"
-                          value={totalSets}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || /^\d+$/.test(value)) {
-                              const num = value === '' ? 1 : parseInt(value);
-                              if (num >= 1 && num <= 10) {
-                                updateSetsCount(num);
-                              }
-                            }
-                          }}
-                          onBlur={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || parseInt(value) === 0) {
-                              updateSetsCount(1);
-                            }
-                          }}
-                          className="h-20 text-3xl text-center font-bold bg-white/5 border-white/20 rounded-2xl pr-10 transition-all focus:shadow-glow-primary"
-                        />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => incrementValue('sets')}
-                            className="tap-target flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-90 transition-all hover:shadow-glow-primary"
-                          >
-                            <ChevronUp className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => decrementValue('sets')}
-                            className="tap-target flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 active:scale-90 transition-all hover:shadow-glow-primary"
-                          >
-                            <ChevronDown className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto px-4 py-6 pb-32">
+        <div className="mx-auto max-w-2xl space-y-6">
+          {/* Exercise Info */}
+          <Card className="border-2 border-border/50">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-2">{currentExercise.exercise.name}</h2>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">{currentExercise.exercise.primaryMuscleGroup}</Badge>
+                    <Badge variant="outline">{currentExercise.exercise.equipmentType}</Badge>
                   </div>
-
-                  <Button
-                    onClick={handleLogSet}
-                    size="lg"
-                    disabled={saveSetConfig.isPending || updateSuggestedWeight.isPending}
-                    className="w-full h-20 text-2xl font-bold bg-primary hover:bg-primary/90 active:scale-95 rounded-2xl tap-target transition-all hover:shadow-glow-primary"
-                  >
-                    {(saveSetConfig.isPending || updateSuggestedWeight.isPending) ? (
-                      <Loader2 className="mr-3 h-8 w-8 animate-spin" />
-                    ) : (
-                      <>
-                        <Check className="mr-3 h-8 w-8" />
-                        Log Set
-                      </>
-                    )}
-                  </Button>
                 </div>
-              )}
-
-              <div className="space-y-6 mt-8">
-                <div className="flex items-center justify-center gap-3">
-                  <Badge variant="default" className="text-base px-4 py-2 bg-primary/20 text-primary border-primary/30 rounded-xl">
-                    {getMuscleGroupForTransition(currentExercise)}
-                  </Badge>
-                  <Badge variant="outline" className="text-base px-4 py-2 bg-white/5 border-white/20 rounded-xl">
-                    {currentExercise.exercise.equipmentType}
-                  </Badge>
+                <div className="flex gap-2">
                   <Button
                     variant="ghost"
-                    size="sm"
-                    onClick={handleChangeClick}
-                    className="hover:bg-white/10 active:scale-90 rounded-xl tap-target transition-all hover:shadow-glow-primary"
+                    size="icon"
+                    onClick={handleChangeExercise}
+                    className="hover:bg-white/10 active:scale-90 rounded-xl tap-target transition-all"
                   >
-                    <RefreshCw className="h-4 w-4 mr-1.5" />
-                    Change
+                    <RefreshCw className="h-5 w-5" />
                   </Button>
-                </div>
-
-                <div className="flex justify-center">
                   <a
                     href={currentExercise.exercise.demoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-primary hover:text-primary/80 transition-all text-base font-semibold active:scale-95 tap-target hover:shadow-glow-primary"
+                    className="inline-flex items-center justify-center h-10 w-10 rounded-xl hover:bg-white/10 active:scale-90 tap-target transition-all"
                   >
                     <ExternalLink className="h-5 w-5" />
-                    <span>View Demo</span>
                   </a>
                 </div>
               </div>
 
-              {!isLastSet && currentLog?.completed && (
-                <div className="mt-8">
+              <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                <span className="text-sm text-muted-foreground">Current Set</span>
+                <span className="text-2xl font-bold">
+                  {currentSetIdx + 1} / {totalSets}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Set Input */}
+          <Card className="border-2 border-primary/50">
+            <CardContent className="pt-6 space-y-6">
+              {/* Weight Input */}
+              <div className="space-y-2">
+                <Label htmlFor="weight" className="text-base">Weight ({userProfile.weightUnit})</Label>
+                <div className="flex items-center gap-2">
                   <Button
-                    onClick={handleNextExercise}
                     variant="outline"
-                    size="lg"
-                    className="w-full h-16 text-lg font-bold bg-white/5 border-white/20 hover:bg-white/10 active:scale-95 rounded-2xl tap-target transition-all hover:shadow-glow-primary"
+                    size="icon"
+                    onClick={() => decrementValue('weight')}
+                    className="h-12 w-12 rounded-xl tap-target"
                   >
-                    <SkipForward className="mr-2 h-6 w-6" />
-                    Next Exercise
+                    <ChevronDown className="h-6 w-6" />
+                  </Button>
+                  <Input
+                    id="weight"
+                    type="number"
+                    step="0.1"
+                    value={currentLog?.weight || '0'}
+                    onChange={(e) => updateCurrentLog('weight', e.target.value)}
+                    className="text-center text-2xl font-bold h-14 rounded-xl"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => incrementValue('weight')}
+                    className="h-12 w-12 rounded-xl tap-target"
+                  >
+                    <ChevronUp className="h-6 w-6" />
                   </Button>
                 </div>
-              )}
+              </div>
 
-              {allSetsCompleted && (
-                <Card className="border-2 border-primary/30 bg-primary/5 mt-8 rounded-2xl shadow-glow-primary">
-                  <CardContent className="py-10 text-center space-y-4">
-                    <div className="flex justify-center">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-glow-primary">
-                        <Check className="h-10 w-10 text-primary-foreground" />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-3xl font-bold">Workout Complete!</p>
-                      <p className="text-lg text-muted-foreground mt-2">
-                        Great job! Tap "Done" to save your workout.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </>
+              {/* Reps Input */}
+              <div className="space-y-2">
+                <Label htmlFor="reps" className="text-base">Reps</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => decrementValue('reps')}
+                    className="h-12 w-12 rounded-xl tap-target"
+                  >
+                    <ChevronDown className="h-6 w-6" />
+                  </Button>
+                  <Input
+                    id="reps"
+                    type="number"
+                    value={currentLog?.reps || '0'}
+                    onChange={(e) => updateCurrentLog('reps', e.target.value)}
+                    className="text-center text-2xl font-bold h-14 rounded-xl"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => incrementValue('reps')}
+                    className="h-12 w-12 rounded-xl tap-target"
+                  >
+                    <ChevronUp className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Sets Count */}
+              <div className="space-y-2">
+                <Label className="text-base">Total Sets</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => decrementValue('sets')}
+                    className="h-12 w-12 rounded-xl tap-target"
+                  >
+                    <ChevronDown className="h-6 w-6" />
+                  </Button>
+                  <div className="flex-1 text-center text-2xl font-bold h-14 flex items-center justify-center border border-border rounded-xl">
+                    {totalSets}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => incrementValue('sets')}
+                    className="h-12 w-12 rounded-xl tap-target"
+                  >
+                    <ChevronUp className="h-6 w-6" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Rest Timer */}
+          {isTimerRunning && (
+            <Card className="border-2 border-primary">
+              <CardContent className="py-6 text-center space-y-4">
+                <p className="text-sm text-muted-foreground">Rest Time</p>
+                <div className="text-5xl font-bold text-primary">
+                  {formatTime(restTimer)}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleSkipRest}
+                  className="w-full"
+                >
+                  <SkipForward className="mr-2 h-4 w-4" />
+                  Skip Rest
+                </Button>
+              </CardContent>
+            </Card>
           )}
+
+          {/* Set History */}
+          <Card className="border-2 border-border/50">
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold mb-4">Set History</h3>
+              <div className="space-y-2">
+                {exerciseLogs[currentExerciseIdx]?.map((log, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between p-3 rounded-xl border ${
+                      log.completed
+                        ? 'bg-green-500/10 border-green-500/50'
+                        : idx === currentSetIdx
+                        ? 'bg-primary/10 border-primary/50'
+                        : 'bg-muted/30 border-border/50'
+                    }`}
+                  >
+                    <span className="font-medium">Set {idx + 1}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm text-muted-foreground">
+                        {log.weight} {userProfile.weightUnit} × {log.reps} reps
+                      </span>
+                      {log.completed && <Check className="h-5 w-5 text-green-500" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
 
+      {/* Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border/50 bg-background/95 backdrop-blur-sm p-4">
+        <div className="container mx-auto max-w-2xl flex gap-2">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handlePreviousSet}
+            disabled={currentExerciseIdx === 0 && currentSetIdx === 0}
+            className="flex-1 h-14 rounded-2xl tap-target"
+          >
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Previous
+          </Button>
+          <Button
+            size="lg"
+            onClick={handleCompleteSet}
+            disabled={!currentLog || currentLog.completed}
+            className="flex-[2] h-14 rounded-2xl tap-target shadow-glow-primary"
+          >
+            <Check className="mr-2 h-6 w-6" />
+            Complete Set
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleNextSet}
+            disabled={currentExerciseIdx === workout.length - 1 && currentSetIdx === totalSets - 1}
+            className="flex-1 h-14 rounded-2xl tap-target"
+          >
+            Next
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Exercise Change Modal */}
       <ExerciseChangeModal
         open={changeModalOpen}
         onOpenChange={setChangeModalOpen}

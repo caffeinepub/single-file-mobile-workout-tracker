@@ -22,14 +22,7 @@ export interface WorkoutWithNote {
 }
 export type Result_2 = {
     __kind__: "ok";
-    ok: Array<Workout>;
-} | {
-    __kind__: "err";
-    err: AppError;
-};
-export type Result_6 = {
-    __kind__: "ok";
-    ok: Array<Exercise>;
+    ok: RecoveryStateWithLegs;
 } | {
     __kind__: "err";
     err: AppError;
@@ -64,69 +57,52 @@ export interface MuscleRecovery {
     lastTrained: bigint;
     recoveryPercentage: number;
 }
-export type Result_5 = {
-    __kind__: "ok";
-    ok: {
-        legs: MuscleRecovery;
-        quads: MuscleRecovery;
-        hamstrings: MuscleRecovery;
-        glutes: MuscleRecovery;
-        calves: MuscleRecovery;
-    };
-} | {
-    __kind__: "err";
-    err: AppError;
-};
 export type Result_1 = {
-    __kind__: "ok";
-    ok: null;
-} | {
-    __kind__: "err";
-    err: AppError;
-};
-export type Result_4 = {
-    __kind__: "ok";
-    ok: {
-        calvesRecovery: MuscleRecovery;
-        quadsRecovery: MuscleRecovery;
-        hamstringsRecovery: MuscleRecovery;
-        shoulders: MuscleRecovery;
-        arms: MuscleRecovery;
-        back: MuscleRecovery;
-        core: MuscleRecovery;
-        chest: MuscleRecovery;
-        legs: MuscleRecovery;
-        glutesRecovery: MuscleRecovery;
-    };
-} | {
-    __kind__: "err";
-    err: AppError;
-};
-export type Result = {
-    __kind__: "ok";
-    ok: number;
-} | {
-    __kind__: "err";
-    err: AppError;
-};
-export type Result_3 = {
     __kind__: "ok";
     ok: UserProfile | null;
 } | {
     __kind__: "err";
     err: AppError;
 };
-export type Result_7 = {
+export interface RecoveryStateWithLegs {
+    calvesRecovery: MuscleRecovery;
+    quadsRecovery: MuscleRecovery;
+    hamstringsRecovery: MuscleRecovery;
+    shoulders: MuscleRecovery;
+    arms: MuscleRecovery;
+    back: MuscleRecovery;
+    core: MuscleRecovery;
+    chest: MuscleRecovery;
+    legs: MuscleRecovery;
+    glutesRecovery: MuscleRecovery;
+}
+export type Result_4 = {
     __kind__: "ok";
     ok: WorkoutWithNote;
 } | {
     __kind__: "err";
     err: AppError;
 };
-export interface Workout {
-    totalVolume: number;
-    exercises: Array<WorkoutExercise>;
-    timestamp: bigint;
+export type Result = {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: AppError;
+};
+export type Result_3 = {
+    __kind__: "ok";
+    ok: LegSubgroupRecovery;
+} | {
+    __kind__: "err";
+    err: AppError;
+};
+export interface LegSubgroupRecovery {
+    legs: MuscleRecovery;
+    quads: MuscleRecovery;
+    hamstrings: MuscleRecovery;
+    glutes: MuscleRecovery;
+    calves: MuscleRecovery;
 }
 export interface WorkoutExercise {
     setData: Array<SetData>;
@@ -166,20 +142,14 @@ export enum WeightUnit {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     debugGetExerciseCounts(): Promise<Array<[string, bigint]>>;
-    generateFullBodyWorkout(): Promise<Result_7>;
-    generateLowerBodyWorkout(): Promise<Result_7>;
-    generateUpperBodyWorkout(): Promise<Result_7>;
-    getAlternativeExercises(muscleGroup: string): Promise<Result_6>;
-    getCallerUserProfile(): Promise<Result_3>;
+    generateLowerBodyWorkout(): Promise<Result_4>;
+    getCallerUserProfile(): Promise<Result_1>;
     getCallerUserRole(): Promise<UserRole>;
-    getLegSubgroupRecovery(): Promise<Result_5>;
-    getRecoveryState(): Promise<Result_4>;
-    getUserProfile(user: Principal): Promise<Result_3>;
-    getWorkoutHistory(): Promise<Result_2>;
+    getLegSubgroupRecovery(): Promise<Result_3>;
+    getRecoveryState(): Promise<Result_2>;
+    getUserProfile(user: Principal): Promise<Result_1>;
     initializeAccessControl(): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
     isTestRecoveryModeEnabled(): Promise<boolean>;
-    saveCallerUserProfile(profile: UserProfile): Promise<Result_1>;
-    saveWorkout(workout: Workout): Promise<Result_1>;
-    updateSuggestedWeightDuringSession(exerciseName: string, weight: number, reps: bigint): Promise<Result>;
+    saveCallerUserProfile(profile: UserProfile): Promise<Result>;
 }
