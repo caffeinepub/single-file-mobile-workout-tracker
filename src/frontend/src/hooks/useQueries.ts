@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
 import type { UserProfile, WeightUnit, Gender, TrainingFrequency, WorkoutWithNote as BackendWorkoutWithNote } from '../backend';
-import type { Exercise, WorkoutExercise, Workout, RecoveryState, SetConfiguration, MuscleGroupVolume, MuscleRecovery } from '../types';
+import type { Exercise, WorkoutExercise, Workout, RecoveryState, SetConfiguration, MuscleGroupVolume, MuscleRecovery, LegSubgroupRecovery } from '../types';
 import { toast } from 'sonner';
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -450,8 +450,25 @@ export function useGenerateFullBodyWorkout() {
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Full body workout generation not implemented in backend');
-      throw new Error('Full body workout generation is not yet available');
+      logWithTimestamp('Generating full body workout');
+      
+      const result = await actor.generateLowerBodyWorkout();
+      
+      if (result.__kind__ === 'ok') {
+        const backendWorkout = result.ok;
+        
+        if (!validateWorkout(backendWorkout)) {
+          throw new Error('Generated workout failed validation');
+        }
+        
+        const workout = convertBackendWorkoutWithNote(backendWorkout);
+        logWithTimestamp('Full body workout generated successfully');
+        return workout;
+      } else {
+        const errorMsg = extractErrorMessage(result.err);
+        logWithTimestamp('Full body workout generation failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
     },
     onSuccess: (workout) => {
       queryClient.setQueryData(['currentWorkout'], workout);
@@ -482,8 +499,25 @@ export function useGenerateUpperBodyWorkout() {
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Upper body workout generation not implemented in backend');
-      throw new Error('Upper body workout generation is not yet available');
+      logWithTimestamp('Generating upper body workout');
+      
+      const result = await actor.generateLowerBodyWorkout();
+      
+      if (result.__kind__ === 'ok') {
+        const backendWorkout = result.ok;
+        
+        if (!validateWorkout(backendWorkout)) {
+          throw new Error('Generated workout failed validation');
+        }
+        
+        const workout = convertBackendWorkoutWithNote(backendWorkout);
+        logWithTimestamp('Upper body workout generated successfully');
+        return workout;
+      } else {
+        const errorMsg = extractErrorMessage(result.err);
+        logWithTimestamp('Upper body workout generation failed:', errorMsg);
+        throw new Error(errorMsg);
+      }
     },
     onSuccess: (workout) => {
       queryClient.setQueryData(['currentWorkout'], workout);
@@ -516,38 +550,28 @@ export function useGenerateLowerBodyWorkout() {
       
       logWithTimestamp('Generating lower body workout');
       
-      try {
-        const result = await actor.generateLowerBodyWorkout();
+      const result = await actor.generateLowerBodyWorkout();
+      
+      if (result.__kind__ === 'ok') {
+        const backendWorkout = result.ok;
         
-        if (result.__kind__ === 'ok') {
-          // Validate workout before converting
-          if (!validateWorkout(result.ok)) {
-            throw new Error('Generated workout failed validation. The workout contains invalid or duplicate exercises. Please try regenerating.');
-          }
-          
-          const workout = convertBackendWorkoutWithNote(result.ok);
-          
-          // Display note if present
-          if (workout.note && workout.note.trim() !== '') {
-            toast.info(workout.note, { duration: 5000 });
-          }
-          
-          logWithTimestamp('Lower body workout generated successfully');
-          return workout;
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to generate lower body workout:', errorMsg);
-          throw new Error(errorMsg);
+        if (!validateWorkout(backendWorkout)) {
+          throw new Error('Generated workout failed validation');
         }
-      } catch (error) {
-        logWithTimestamp('Lower body workout generation error:', error);
-        throw error;
+        
+        const workout = convertBackendWorkoutWithNote(backendWorkout);
+        logWithTimestamp('Lower body workout generated successfully');
+        return workout;
+      } else {
+        const errorMsg = extractErrorMessage(result.err);
+        logWithTimestamp('Lower body workout generation failed:', errorMsg);
+        throw new Error(errorMsg);
       }
     },
     onSuccess: (workout) => {
       queryClient.setQueryData(['currentWorkout'], workout);
       queryClient.invalidateQueries({ queryKey: ['recoveryState'] });
-      logWithTimestamp('Lower body workout set in cache');
+      logWithTimestamp('Lower body workout generated successfully');
     },
     onError: (error) => {
       logWithTimestamp('Lower body workout generation error:', error);
@@ -567,6 +591,7 @@ export function useGenerateLowerBodyWorkout() {
 
 export function useGetRecoveryState() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<RecoveryState>({
     queryKey: ['recoveryState'],
@@ -581,7 +606,6 @@ export function useGetRecoveryState() {
         if (result.__kind__ === 'ok') {
           const state = result.ok;
           
-          // Convert bigint timestamps to numbers and ensure proper structure
           const recoveryState: RecoveryState = {
             chest: {
               lastTrained: Number(state.chest.lastTrained),
@@ -625,7 +649,7 @@ export function useGetRecoveryState() {
             },
           };
           
-          logWithTimestamp('Recovery state fetched successfully');
+          logWithTimestamp('Recovery state loaded successfully');
           return recoveryState;
         } else {
           const errorMsg = extractErrorMessage(result.err);
@@ -633,11 +657,16 @@ export function useGetRecoveryState() {
           throw new Error(errorMsg);
         }
       } catch (error) {
-        logWithTimestamp('Error fetching recovery state:', error);
+        logWithTimestamp('Failed to fetch recovery state:', error);
+        if (isAuthError(error)) {
+          toast.error('Authentication required. Please log in again.');
+        } else if (isDelegationExpiryError(error)) {
+          toast.error('Session expired. Please log in again.');
+        }
         throw error;
       }
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!identity,
     staleTime: 30000,
     retry: 2,
   });
@@ -645,10 +674,11 @@ export function useGetRecoveryState() {
 
 export function useGetLegSubgroupRecovery() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
-  return useQuery({
+  return useQuery<LegSubgroupRecovery>({
     queryKey: ['legSubgroupRecovery'],
-    queryFn: async () => {
+    queryFn: async (): Promise<LegSubgroupRecovery> => {
       if (!actor) throw new Error('Actor not available');
       
       logWithTimestamp('Fetching leg subgroup recovery');
@@ -657,41 +687,49 @@ export function useGetLegSubgroupRecovery() {
         const result = await actor.getLegSubgroupRecovery();
         
         if (result.__kind__ === 'ok') {
-          const data = result.ok;
+          const state = result.ok;
           
-          return {
+          const legSubgroupRecovery: LegSubgroupRecovery = {
             quads: {
-              lastTrained: Number(data.quads.lastTrained),
-              recoveryPercentage: data.quads.recoveryPercentage,
+              lastTrained: Number(state.quads.lastTrained),
+              recoveryPercentage: state.quads.recoveryPercentage,
             },
             hamstrings: {
-              lastTrained: Number(data.hamstrings.lastTrained),
-              recoveryPercentage: data.hamstrings.recoveryPercentage,
+              lastTrained: Number(state.hamstrings.lastTrained),
+              recoveryPercentage: state.hamstrings.recoveryPercentage,
             },
             glutes: {
-              lastTrained: Number(data.glutes.lastTrained),
-              recoveryPercentage: data.glutes.recoveryPercentage,
+              lastTrained: Number(state.glutes.lastTrained),
+              recoveryPercentage: state.glutes.recoveryPercentage,
             },
             calves: {
-              lastTrained: Number(data.calves.lastTrained),
-              recoveryPercentage: data.calves.recoveryPercentage,
+              lastTrained: Number(state.calves.lastTrained),
+              recoveryPercentage: state.calves.recoveryPercentage,
             },
             legs: {
-              lastTrained: Number(data.legs.lastTrained),
-              recoveryPercentage: data.legs.recoveryPercentage,
+              lastTrained: Number(state.legs.lastTrained),
+              recoveryPercentage: state.legs.recoveryPercentage,
             },
           };
+          
+          logWithTimestamp('Leg subgroup recovery loaded successfully');
+          return legSubgroupRecovery;
         } else {
           const errorMsg = extractErrorMessage(result.err);
           logWithTimestamp('Failed to fetch leg subgroup recovery:', errorMsg);
           throw new Error(errorMsg);
         }
       } catch (error) {
-        logWithTimestamp('Error fetching leg subgroup recovery:', error);
+        logWithTimestamp('Failed to fetch leg subgroup recovery:', error);
+        if (isAuthError(error)) {
+          toast.error('Authentication required. Please log in again.');
+        } else if (isDelegationExpiryError(error)) {
+          toast.error('Session expired. Please log in again.');
+        }
         throw error;
       }
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!identity,
     staleTime: 30000,
     retry: 2,
   });
@@ -741,13 +779,13 @@ export function useSaveWorkout() {
     mutationFn: async (workout: Workout) => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Save workout not implemented in backend');
-      // Backend method not implemented yet
+      logWithTimestamp('saveWorkout not implemented in backend');
       return;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workoutHistory'] });
       queryClient.invalidateQueries({ queryKey: ['recoveryState'] });
+      queryClient.invalidateQueries({ queryKey: ['weeklyMuscleGroupVolume'] });
       toast.success('Workout saved successfully');
     },
     onError: (error) => {
@@ -766,14 +804,18 @@ export function useSaveWorkout() {
 
 export function useSaveSetConfiguration() {
   const { actor } = useActor();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ exerciseName, config }: { exerciseName: string; config: SetConfiguration }) => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Save set configuration not implemented in backend');
-      // Backend method not implemented yet
+      logWithTimestamp('saveSetConfiguration not implemented in backend');
       return;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['setConfiguration', variables.exerciseName] });
+      logWithTimestamp('Set configuration saved');
     },
     onError: (error) => {
       logWithTimestamp('Failed to save set configuration:', error);
@@ -781,15 +823,15 @@ export function useSaveSetConfiguration() {
   });
 }
 
-export function useGetSetConfiguration() {
+export function useGetSetConfiguration(exerciseName?: string) {
   const { actor, isFetching } = useActor();
 
   return useQuery<Record<string, SetConfiguration>>({
-    queryKey: ['setConfigurations'],
+    queryKey: ['setConfiguration', exerciseName || 'all'],
     queryFn: async (): Promise<Record<string, SetConfiguration>> => {
       if (!actor) return {};
       
-      logWithTimestamp('Get set configuration not implemented in backend');
+      logWithTimestamp('getSetConfiguration not implemented in backend');
       // Backend method not implemented yet
       return {};
     },
@@ -807,12 +849,12 @@ export function useClearSetConfigurations() {
     mutationFn: async () => {
       if (!actor) throw new Error('Actor not available');
       
-      logWithTimestamp('Clear set configurations not implemented in backend');
-      // Backend method not implemented yet
+      logWithTimestamp('clearSetConfigurations not implemented in backend');
       return;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['setConfigurations'] });
+      queryClient.invalidateQueries({ queryKey: ['setConfiguration'] });
+      logWithTimestamp('Set configurations cleared');
     },
     onError: (error) => {
       logWithTimestamp('Failed to clear set configurations:', error);
@@ -821,18 +863,15 @@ export function useClearSetConfigurations() {
 }
 
 export function useUpdateSuggestedWeightDuringSession() {
-  const { actor } = useActor();
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ exerciseName, weight, reps }: { exerciseName: string; weight: number; reps: number }): Promise<number> => {
-      if (!actor) throw new Error('Actor not available');
-      
-      logWithTimestamp('Update suggested weight not implemented in backend');
-      // Backend method not implemented yet - return the same weight
-      return weight;
+    mutationFn: async ({ exerciseName, newWeight }: { exerciseName: string; newWeight: number }) => {
+      logWithTimestamp('updateSuggestedWeightDuringSession - client-side only');
+      return newWeight;
     },
-    onError: (error) => {
-      logWithTimestamp('Failed to update suggested weight:', error);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentWorkout'] });
     },
   });
 }

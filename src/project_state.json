@@ -1,53 +1,21 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
-  "summary": "Fix workout exercise visibility/regression and frontend rendering: backend leg subgroup matching fixed via Text.toLowercase/Text.equal; now update workout preview UI so muscle groups render in a consistent order across ALL workout types (Chest → Back → Arms → Legs → Core), and ensure Lower Body preview shows a top-level Legs group (with Quads/Hamstrings/Glutes/Calves subsections) followed by a Core section when present; user requested forcing the UI change and building a new draft.",
+  "projectStateVersion": 3,
+  "summary": "Workout generator app: fix workout generation failures (\"Failed to generate workout\") across Full/Upper/Lower Body generation flows, especially in test mode.",
   "architectural_notes": [
-    "Lower Body workout generation logic depends on cappedExercises.size() and total/final leg exercise counts to produce user-facing note strings; note logic must match a strict 4-branch specification.",
-    "Frontend Lower Body workout rendering must group exercises by primaryMuscleGroup and explicitly include a conditional Core section after leg subgroups.",
-    "Leg exercise availability depends on getExerciseCountForGroup() recovery thresholds; for Quads/Hamstrings/Glutes/Calves, thresholds must allow at least 1 exercise when recovery >=30% (Core unchanged) to prevent legs from being filtered out entirely.",
-    "Lower Body workout note strings must exactly match the agreed 4-branch wording and decision order; remove redundant early empty-check (totalExerciseCount == 0) so emptiness is handled solely via cappedExercises.size() == 0 in the note logic.",
-    "Muscle-group comparisons in backend exercise filtering should use Motoko Text.toLowercase() + Text.equal() (not a custom ASCII-only toLower) to avoid silent mismatches that can drop Quads/Hamstrings/Glutes/Calves during workout generation.",
-    "Workout preview frontend must enforce a deterministic muscle-group display order across all workout types: Chest → Back → Arms → Legs → Core; for Lower Body specifically, Legs is a top-level group with Quads/Hamstrings/Glutes/Calves subsections and Core renders after Legs when present."
+    "Workout generation functions should auto-create a default UserProfile for caller when missing to avoid hard failure during generation.",
+    "In TEST_RECOVERY_MODE, generation should bypass recovery gating (and any access-control blocks if applicable) so workouts can always be generated for testing."
   ],
   "known_issues": [
-    "Backend generateLowerBodyWorkout() currently has incorrect note logic (wrong strings/branches), duplicate empty checks, and uses <=2 instead of <=3 for limited-workout threshold.",
-    "Frontend Lower Body workout UI currently does not display Core exercises; requires a conditional Core subsection after leg groups.",
-    "Version 342: Leg exercises are not appearing in Full Body and Lower Body workouts, likely due to overly strict recovery thresholds in getExerciseCountForGroup() for leg muscle groups (Quads/Hamstrings/Glutes/Calves).",
-    "Likely root cause for missing leg exercises: backend filtering uses a custom toLower() for primaryMuscleGroup comparisons, which may mishandle non-ASCII/whitespace/encoding, resulting in zero matches for Quads/Hamstrings/Glutes/Calves.",
-    "Frontend workout preview screens do not consistently render muscle-group sections in the required order (Chest, Back, Arms, Legs, Core)."
+    "Bug: Clicking Generate for Full/Upper/Lower Body results in \"Failed to generate workout\" and no exercises returned, even with test recovery mode active."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-build-and-deploy-a-new-draft-containing-the-backend-leg-filter-fix-and-report-the-newly-created-draft-version-number",
-      "title": "Build and deploy a new draft containing the backend leg-filter fix, and report the newly created draft version number.",
+      "id": "feature-build-and-deploy-a-new-draft-containing-only-the-functional-fixes-described-in-req-1-through-req-4-without-introducing-unrelated-logic-changes",
+      "title": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without introducing unrelated logic changes.",
       "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-workout-preview-rendering-in-frontend-src-pages-workoutpreviewpage-tsx-so-that-muscle-group-sections-are-rendered-in-this-exact-top-level-order-when-they-have-exercises-chest-back-arms-legs-core",
-      "title": "Update the workout preview rendering in frontend/src/pages/WorkoutPreviewPage.tsx so that muscle-group sections are rendered in this exact top-level order when they have exercises: Chest → Back → Arms → Legs → Core.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-fix-lower-body-workout-preview-rendering-so-that-legs-is-shown-as-a-single-top-level-section-that-contains-quads-hamstrings-glutes-and-calves-subsections-in-that-order-when-those-subgroups-have-exercises-and-render-the-core-section-after-the-legs-section-when-core-exercises-exist",
-      "title": "Fix Lower Body workout preview rendering so that Legs is shown as a single top-level section that contains Quads, Hamstrings, Glutes, and Calves subsections (in that order) when those subgroups have exercises, and render the Core section after the Legs section when Core exercises exist.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-any-muscle-groups-not-included-in-the-required-order-e-g-shoulders-or-any-unexpected-groups-returned-by-the-backend-do-not-break-ordering-render-them-only-after-core-in-a-stable-deterministic-order",
-      "title": "Ensure any muscle groups not included in the required order (e.g., Shoulders or any unexpected groups returned by the backend) do not break ordering; render them only after Core in a stable, deterministic order.",
-      "reqIds": [
-        "REQ-11"
+        "REQ-5"
       ],
       "version": 1
     }
@@ -55,106 +23,44 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Backend: Fix generateLowerBodyWorkout() note logic to exactly match the specified 4-case logic; remove duplicate empty check block; change limited threshold from <=2 to <=3.",
+      "summary": "Fix \"Failed to generate workout\" by adding default user profile fallback and ensuring test mode bypasses profile/access-control/recovery blockers in generateFullBodyWorkout/generateUpperBodyWorkout/generateLowerBodyWorkout",
       "reqIds": [],
       "status": "in_progress"
     },
     {
       "id": "AR-2",
-      "summary": "Frontend: Update Lower Body workout UI component to render a Core subsection (only when Core exercises exist), placed after leg groups, using the provided JSX structure.",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-3",
-      "summary": "In backend/main.mo, update generateLowerBodyWorkout() to fix the three specified logic errors: (1) replace the note decision tree to match the user-provided 4-branch logic exactly (including the exact English strings), (2) remove the first/duplicate early-return empty check block (the one described as being at lines 511–520 in the current file), and (3) change the limited-workout threshold from cappedExercises.size() <= 2 to cappedExercises.size() <= 3.",
+      "summary": "In backend/main.mo, update generateLowerBodyWorkout(), generateFullBodyWorkout(), and generateUpperBodyWorkout() to automatically create and persist a default UserProfile for the caller when userProfiles.get(caller) is null, using the exact fallback code provided by the user and placing it at the top of each function (immediately after the caller check).",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-4",
-      "summary": "Update the frontend lower-body workout rendering component to display Core exercises by adding a conditional \"Core\" subsection AFTER the leg groups (Quads, Hamstrings, Glutes, Calves) when workout.exercises contains any exercises whose exercise.primaryMuscleGroup is \"Core\". Insert the JSX exactly as provided by the user.",
+      "id": "AR-3",
+      "summary": "In backend/main.mo, ensure that when TEST_RECOVERY_MODE is true, the generateFullBodyWorkout(), generateUpperBodyWorkout(), and generateLowerBodyWorkout() code paths do not fail due to access control checks: if an access-control permission check fails inside these generate functions (or in helpers they call), bypass the denial when TEST_RECOVERY_MODE is true and allow workout generation to proceed.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-5",
-      "summary": "Backend: In getExerciseCountForGroup(), adjust recovery thresholds for Quads, Hamstrings, Glutes, Calves so >=30% recovery returns at least 1 exercise per group (leave Core logic unchanged). Apply only this change to fix legs not appearing in Full Body and Lower Body workouts.",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-6",
-      "summary": "In backend/main.mo, update getExerciseCountForGroup() recovery thresholds for leg subgroups (Quads, Hamstrings, Glutes, Calves) so that recoveryPercentage >= 30.0 returns at least 1 exercise for that subgroup (while keeping the existing 2-exercise threshold at >= 80.0). Leave Core and all other muscle group logic unchanged, and do not modify any other code paths (including TEST_RECOVERY_MODE behavior).",
+      "id": "AR-4",
+      "summary": "In backend/main.mo, ensure TEST_RECOVERY_MODE truly allows workout generation by removing any trapping/aborting behavior in the TEST_RECOVERY_MODE branch of recovery/exercise-count logic (e.g., do not call Runtime.trap in test mode); in test mode, the recovery/exercise-count logic must return valid exercise counts so the generate*Workout functions can always assemble a non-empty exercise list when the library contains matching exercises.",
       "reqIds": [
         "REQ-3"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-7",
-      "summary": "Backend (Version 343): In generateLowerBodyWorkout(), update note logic to exactly match the provided 4-branch wording (including \"Core-focused session (leg subgroups recovering)\" and \"Limited exercises due to muscle recovery\" and \"Full lower-body workout\"), and remove the first empty-check block that returns when totalExerciseCount == 0. Apply ONLY these two changes; no build.",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-8",
-      "summary": "In backend/main.mo, update generateLowerBodyWorkout() so the user-facing note logic matches exactly this 4-branch decision tree and strings:\n- If cappedExercises.size() == 0: \"All lower muscle groups recovering\"\n- Else if totalLegCount == 0: \"Core-focused session (leg subgroups recovering)\"\n- Else if cappedExercises.size() <= 3: \"Limited exercises due to muscle recovery\"\n- Else: \"Full lower-body workout\"\nDo not change any other wording.",
+      "id": "AR-5",
+      "summary": "Keep TEST_RECOVERY_MODE set to true in backend/main.mo (do not change the flag value).",
       "reqIds": [
         "REQ-4"
       ],
       "status": "pending"
-    },
-    {
-      "id": "AR-9",
-      "summary": "In backend/main.mo, within generateLowerBodyWorkout(), remove the first/duplicate early-return empty-check block that checks totalExerciseCount == 0. Preserve the remaining logic and behavior aside from removing that duplicated empty check.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Backend: Fix leg subgroup matching by replacing the custom toLower() comparison in buildShuffledSectionFromArray() with native Text.toLowercase() + Text.equal() (keep all debug prints and logic identical; leave TEST_RECOVERY_MODE unchanged), then build/deploy a new draft for testing generateLowerBodyWorkout.",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-11",
-      "summary": "In backend/main.mo, within buildShuffledSectionFromArray’s exercises.filter predicate, replace the existing custom lowercase comparison line with a native case-insensitive equality check using Text.toLowercase and Text.equal exactly as follows:\n\nlet matches = Text.equal(\n  Text.toLowercase(e.primaryMuscleGroup),\n  Text.toLowercase(group)\n);\n\nNo other changes are allowed inside buildShuffledSectionFromArray (all Debug.print statements and all other logic must remain byte-for-byte identical to the current project version).",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-12",
-      "summary": "Ensure TEST_RECOVERY_MODE remains set to true and unchanged in backend/main.mo as part of this update.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-13",
-      "summary": "Frontend: Force-apply workout preview rendering changes across ALL workout types to (1) always display muscle groups in order Chest → Back → Arms → Legs → Core when present, (2) for Lower Body show a top-level \"Legs\" group containing Quads/Hamstrings/Glutes/Calves subsections, and (3) render Core AFTER Legs when Core exercises exist; then build/deploy a new draft for testing.",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-17",
-      "summary": "Build and deploy a new draft containing the frontend workout preview fixes (Core visible in Lower Body + enforced muscle order) and report the newly created draft version number.",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "status": "pending"
     }
   ],
-  "projectName": "Fix lower-body workout note logic and render Core subsection in lower-body UI",
+  "projectName": "Fix workout generation failure by auto-creating default user profile and bypassing blockers in test recovery mode",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

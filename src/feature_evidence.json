@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-workout-preview-rendering-in-frontend-src-pages-workoutpreviewpage-tsx-so-that-muscle-group-sections-are-rendered-in-this-exact-top-level-order-when-they-have-exercises-chest-back-arms-legs-core",
-      "featureTitle": "Update the workout preview rendering in frontend/src/pages/WorkoutPreviewPage.tsx so that muscle-group sections are rendered in this exact top-level order when they have exercises: Chest → Back → Arms → Legs → Core.",
+      "featureId": "feature-build-and-deploy-a-new-draft-containing-only-the-functional-fixes-described-in-req-1-through-req-4-without-introducing-unrelated-logic-changes",
+      "featureTitle": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without introducing unrelated logic changes.",
       "files": [
-        "frontend/src/lib/workoutPreviewSections.ts",
-        "frontend/src/pages/WorkoutPreviewPage.tsx"
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@3.0.0",
@@ -20,53 +19,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-9"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-fix-lower-body-workout-preview-rendering-so-that-legs-is-shown-as-a-single-top-level-section-that-contains-quads-hamstrings-glutes-and-calves-subsections-in-that-order-when-those-subgroups-have-exercises-and-render-the-core-section-after-the-legs-section-when-core-exercises-exist",
-      "featureTitle": "Fix Lower Body workout preview rendering so that Legs is shown as a single top-level section that contains Quads, Hamstrings, Glutes, and Calves subsections (in that order) when those subgroups have exercises, and render the Core section after the Legs section when Core exercises exist.",
-      "files": [
-        "frontend/src/lib/workoutPreviewSections.ts",
-        "frontend/src/pages/WorkoutPreviewPage.tsx"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "qr-code@1.0.0",
-        "camera@1.0.0",
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-10"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-any-muscle-groups-not-included-in-the-required-order-e-g-shoulders-or-any-unexpected-groups-returned-by-the-backend-do-not-break-ordering-render-them-only-after-core-in-a-stable-deterministic-order",
-      "featureTitle": "Ensure any muscle groups not included in the required order (e.g., Shoulders or any unexpected groups returned by the backend) do not break ordering; render them only after Core in a stable, deterministic order.",
-      "files": [
-        "frontend/src/lib/workoutPreviewSections.ts",
-        "frontend/src/pages/WorkoutPreviewPage.tsx"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "qr-code@1.0.0",
-        "camera@1.0.0",
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-11"
+        "REQ-5"
       ],
       "confidence": "high"
     }

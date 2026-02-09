@@ -46,6 +46,14 @@ export interface RecoveryState {
   calvesRecovery: MuscleRecovery;
 }
 
+export interface LegSubgroupRecovery {
+  quads: MuscleRecovery;
+  hamstrings: MuscleRecovery;
+  glutes: MuscleRecovery;
+  calves: MuscleRecovery;
+  legs: MuscleRecovery;
+}
+
 export interface WorkoutSummary {
   date: bigint;
   exercises: string[];

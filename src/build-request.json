@@ -1,87 +1,106 @@
 {
   "kind": "build_request",
-  "title": "Fix missing Core section in Lower Body preview and enforce global muscle-group display order",
+  "title": "Fix workout generation failure by auto-creating default user profile and bypassing blockers in test recovery mode",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-9",
-      "text": "Update the workout preview rendering in frontend/src/pages/WorkoutPreviewPage.tsx so that muscle-group sections are rendered in this exact top-level order when they have exercises: Chest → Back → Arms → Legs → Core.",
-      "target": "frontend",
+      "id": "REQ-1",
+      "text": "In backend/main.mo, update generateLowerBodyWorkout(), generateFullBodyWorkout(), and generateUpperBodyWorkout() to automatically create and persist a default UserProfile for the caller when userProfiles.get(caller) is null, using the exact fallback code provided by the user and placing it at the top of each function (immediately after the caller check).",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Update the workout preview rendering so muscle groups ALWAYS display in this exact order when they have exercises: 1. Chest 2. Back 3. Arms 4. Legs ... 5. Core (after Legs)"
+          "If userProfiles.get(caller) == null, create a default profile automatically instead of returning #err",
+          "Use this minimal default profile fallback (add at top of each function after caller check):\n\nlet profile = switch (userProfiles.get(caller)) {\n  case (null) {\n    let defaultProfile : UserProfile = {\n      gender = #other;\n      bodyweight = 70.0;\n      weightUnit = #kg;\n      trainingFrequency = #threeDays;\n      darkMode = false;\n      restTime = 90;\n      muscleGroupRestInterval = 48;\n    };\n    userProfiles.add(caller, defaultProfile);\n    defaultProfile\n  };\n  case (?p) { p };\n};"
         ]
       },
       "acceptanceCriteria": [
-        "Given any generated workout preview (Full Body, Upper Body, Lower Body, Lower Body + Core, and any other workout type), the UI renders muscle-group sections in this exact order when the group has at least one exercise: Chest, Back, Arms, Legs, Core.",
-        "If one or more of the ordered groups has zero exercises, that group is omitted without affecting the relative order of the remaining groups."
+        "Calling generateFullBodyWorkout(), generateUpperBodyWorkout(), or generateLowerBodyWorkout() with no existing profile for the caller does not return #err(#userProfileNotFound(...)) (or any equivalent profile-missing error) and instead creates a profile entry for caller in userProfiles.",
+        "The default profile values match the user-provided snippet exactly (gender=#other, bodyweight=70.0, weightUnit=#kg, trainingFrequency=#threeDays, darkMode=false, restTime=90, muscleGroupRestInterval=48)."
       ]
     },
     {
-      "id": "REQ-10",
-      "text": "Fix Lower Body workout preview rendering so that Legs is shown as a single top-level section that contains Quads, Hamstrings, Glutes, and Calves subsections (in that order) when those subgroups have exercises, and render the Core section after the Legs section when Core exercises exist.",
-      "target": "frontend",
+      "id": "REQ-2",
+      "text": "In backend/main.mo, ensure that when TEST_RECOVERY_MODE is true, the generateFullBodyWorkout(), generateUpperBodyWorkout(), and generateLowerBodyWorkout() code paths do not fail due to access control checks: if an access-control permission check fails inside these generate functions (or in helpers they call), bypass the denial when TEST_RECOVERY_MODE is true and allow workout generation to proceed.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Legs (top-level group with Quads/Hamstrings/Glutes/Calves subsections)",
-          "Core (after Legs)"
+          "If access control fails, bypass for test mode or log and continue",
+          "Ensure test mode always allows generation (override recovery if needed)"
         ]
       },
       "acceptanceCriteria": [
-        "On a Lower Body (and Lower Body + Core) preview, Quads/Hamstrings/Glutes/Calves exercises are not rendered as separate top-level sections; they appear only under a single top-level \"Legs\" section.",
-        "Within the \"Legs\" section, subsections appear in this order when present: Quads, Hamstrings, Glutes, Calves.",
-        "If the workout contains any exercises where exercise.primaryMuscleGroup === \"Core\", a \"Core\" section is displayed after the \"Legs\" section; otherwise, Core is omitted.",
-        "The Core section uses the exact JSX structure provided by the user (matching the existing style expectations) for listing Core exercises, including the suggestedWeight conditional and unit display logic."
+        "With TEST_RECOVERY_MODE = true, generating Full Body / Upper Body / Lower Body does not return #err(#unauthorized(...)) for non-admin/non-initialized access-control states.",
+        "With TEST_RECOVERY_MODE = false, existing access control behavior remains unchanged."
       ]
     },
     {
-      "id": "REQ-11",
-      "text": "Ensure any muscle groups not included in the required order (e.g., Shoulders or any unexpected groups returned by the backend) do not break ordering; render them only after Core in a stable, deterministic order.",
-      "target": "frontend",
+      "id": "REQ-3",
+      "text": "In backend/main.mo, ensure TEST_RECOVERY_MODE truly allows workout generation by removing any trapping/aborting behavior in the TEST_RECOVERY_MODE branch of recovery/exercise-count logic (e.g., do not call Runtime.trap in test mode); in test mode, the recovery/exercise-count logic must return valid exercise counts so the generate*Workout functions can always assemble a non-empty exercise list when the library contains matching exercises.",
+      "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
+        ],
+        "quotes": [
+          "Ensure test mode always allows generation (override recovery if needed)"
         ]
       },
       "acceptanceCriteria": [
-        "Workout previews never display any top-level muscle group before Chest or between the required ordered groups when those required groups are present.",
-        "Any additional/unexpected muscle groups (if present) render after Core in a deterministic order (e.g., alphabetical), and the app does not crash."
+        "When TEST_RECOVERY_MODE is true, calling the generateFullBodyWorkout(), generateUpperBodyWorkout(), and generateLowerBodyWorkout() endpoints does not trap/abort and returns #ok with exercises when the exercise library contains exercises for the requested muscle groups.",
+        "No new logging is added as part of this change."
       ]
     },
     {
-      "id": "REQ-12",
-      "text": "Build and deploy a new draft containing the frontend workout preview fixes (Core visible in Lower Body + enforced muscle order) and report the newly created draft version number.",
+      "id": "REQ-4",
+      "text": "Keep TEST_RECOVERY_MODE set to true in backend/main.mo (do not change the flag value).",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Keep TEST_RECOVERY_MODE = true"
+        ]
+      },
+      "acceptanceCriteria": [
+        "backend/main.mo still has TEST_RECOVERY_MODE set to true after the changes."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without introducing unrelated logic changes.",
       "target": "both",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "FORCE APPLY + BUILD DRAFT: Fix Core missing in Lower Body + enforce muscle order"
+          "Apply this change to the project and build a new draft NOW",
+          "Do NOT change other logic"
         ]
       },
       "acceptanceCriteria": [
-        "A new draft is successfully built and deployed with the updated frontend behavior.",
-        "The response includes the new draft version number for review/testing."
+        "A new draft is produced and deployable.",
+        "The draft includes the default-profile fallback in all three generate functions and test-mode bypasses as specified, and does not add debug logging."
       ]
     }
   ],
   "constraints": [
-    "Do not change backend code for this request.",
-    "Do not edit any files under frontend/src/components/ui (compose existing components only).",
-    "Do not edit files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx (immutable paths).",
-    "Use English for any user-facing text."
+    "Do not add logging.",
+    "Do not ask the user for more code or further confirmation in order to apply this fix.",
+    "Keep TEST_RECOVERY_MODE = true.",
+    "Do not change unrelated logic outside of enabling generation in test mode and adding the default profile fallback in the three specified generate functions."
   ],
   "nonGoals": [
-    "Do not modify workout generation logic or any backend muscle-group filtering/recovery logic.",
-    "Do not change workout type selection UI or add new workout types.",
-    "Do not change global styling/theme beyond what is necessary to implement the ordered grouping and Core visibility in the preview."
+    "Adding new UI features or changing the workout preview layout.",
+    "Implementing third-party auth or any external database/storage.",
+    "Adding new exercise content to the library."
   ],
   "imageRequirements": {
     "required": [],

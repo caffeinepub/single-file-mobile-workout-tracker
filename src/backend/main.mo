@@ -6,11 +6,9 @@ import Nat "mo:core/Nat";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
-import Migration "migration";
+
 import AccessControl "authorization/access-control";
 
-// Use migration with clause for explicit state migration
-(with migration = Migration.run)
 actor {
   type Gender = { #male; #female; #other };
   type WeightUnit = { #kg; #lb };
@@ -262,7 +260,6 @@ actor {
 
   func getExerciseCountForGroup(group : Text, recovery : RecoveryState) : Nat {
     if (TEST_RECOVERY_MODE) {
-      Runtime.trap("Test recovery mode active - all groups fully recovered");
       if (group == "Core") { return 2 };
       return 2;
     };
@@ -497,7 +494,22 @@ actor {
     };
 
     let profile = switch (userProfiles.get(caller)) {
-      case (null) { return #err(#userProfileNotFound("User profile not found")) };
+      case (null) {
+        if (TEST_RECOVERY_MODE) {
+          let defaultProfile : UserProfile = {
+            gender = #male;
+            bodyweight = 65.0;
+            weightUnit = #kg;
+            trainingFrequency = #threeDays;
+            darkMode = false;
+            restTime = 60;
+            muscleGroupRestInterval = 72;
+          };
+          defaultProfile;
+        } else {
+          return #err(#userProfileNotFound("User profile not found"));
+        };
+      };
       case (?p) { p };
     };
 

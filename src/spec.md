@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Fix workout preview rendering so muscle groups always appear in a consistent global order, and ensure Core is shown correctly for Lower Body (+ Core) previews.
+**Goal:** Fix workout generation failures by auto-creating a default user profile when missing and ensuring test recovery mode does not block generation.
 
 **Planned changes:**
-- Update `frontend/src/pages/WorkoutPreviewPage.tsx` to render top-level muscle-group sections in this order when they have exercises: Chest → Back → Arms → Legs → Core.
-- Fix Lower Body preview so Quads/Hamstrings/Glutes/Calves render only as subsections under a single top-level “Legs” section (subsection order: Quads, Hamstrings, Glutes, Calves).
-- Render a “Core” section after “Legs” when Core exercises exist, using the provided JSX structure and weight/unit display logic.
-- Ensure any unexpected/extra muscle groups render only after Core in a deterministic order and do not break the preview.
-- Build and deploy a new draft containing these frontend preview fixes and provide the new draft version number.
+- In `backend/main.mo`, update `generateLowerBodyWorkout()`, `generateFullBodyWorkout()`, and `generateUpperBodyWorkout()` to create and persist a default `UserProfile` for the caller when `userProfiles.get(caller)` is null, using the provided fallback snippet placed at the top of each function (immediately after the caller check).
+- In `backend/main.mo`, when `TEST_RECOVERY_MODE` is true, bypass access-control permission denials encountered during workout generation so these generate endpoints proceed instead of returning unauthorized errors.
+- In `backend/main.mo`, remove/avoid any trapping/aborting behavior in test-mode recovery/exercise-count logic so test mode returns valid exercise counts and generation can produce a non-empty exercise list when matching exercises exist.
+- Keep `TEST_RECOVERY_MODE` set to `true`, and produce a new draft containing only these functional fixes (no unrelated logic changes and no new logging).
 
-**User-visible outcome:** Workout previews (including Lower Body and Lower Body + Core) show muscle groups in a stable order, Legs are grouped correctly with ordered subgroups, and Core appears after Legs when applicable.
+**User-visible outcome:** Users can generate Full Body, Upper Body, and Lower Body workouts even if they have no existing profile (a default profile is created automatically), and in test recovery mode generation proceeds without access-control or recovery logic blockers.

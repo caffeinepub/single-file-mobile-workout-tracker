@@ -1,87 +1,82 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T22:05:31.897Z",
-  "summary": "Diff introduces a new helper to build ordered workout preview sections (including a nested Legs section and alphabetical unexpected groups) and wires it into WorkoutPreviewPage via import, but the provided diff summary is truncated before showing the actual rendering logic and Core JSX structure. Additionally, significant backend changes and other frontend behavior changes were made despite the request being frontend-only and explicitly prohibiting backend changes.",
+  "generatedAt": "2026-02-09T17:57:57.642Z",
+  "summary": "The diff does not provide evidence that the required backend fixes were implemented in backend/main.mo (default profile auto-creation in the three generate functions, test-mode access-control bypass, and removal of traps/aborts in test-mode recovery logic). Instead, substantial frontend-side changes were introduced, including added console logging/debug helpers and a frontend DEFAULT_PROFILE with values that do not match the requested backend fallback profile.",
   "missing_requirements": [
     {
-      "id": "REQ-9",
-      "requirement": "Update WorkoutPreviewPage.tsx so top-level muscle-group sections render in exact order Chest → Back → Arms → Legs → Core (omitting empty groups).",
-      "reason": "The diff shows a new section-ordering utility and an import in WorkoutPreviewPage, but the file content is truncated before any evidence that the preview UI actually renders sections using this order.",
+      "id": "REQ-1",
+      "requirement": "In backend/main.mo, update generateLowerBodyWorkout(), generateFullBodyWorkout(), and generateUpperBodyWorkout() to auto-create and persist a default UserProfile for the caller when missing, using the exact user-provided fallback snippet at the top of each function.",
+      "reason": "The backend diff excerpt shows type definitions, TEST_RECOVERY_MODE, and the exercise library, but contains no visible changes or additions showing default-profile creation/persistence inside the three generate*Workout functions (and the file is truncated, so this cannot be verified).",
       "evidence": [
-        "frontend/src/pages/WorkoutPreviewPage.tsx (truncated; shows import of buildOrderedSections but not the rendering)",
-        "frontend/src/lib/workoutPreviewSections.ts"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-10",
-      "requirement": "Fix Lower Body preview so Legs is a single top-level section containing Quads/Hamstrings/Glutes/Calves subsections (in that order) and render Core after Legs when present, using the exact provided Core JSX structure (including suggestedWeight/unit logic).",
-      "reason": "The section builder creates a nested Legs section and supports Core as a required group, but the diff does not show WorkoutPreviewPage rendering a Legs section with subsections, nor does it show the required 'exact JSX structure' for the Core section.",
+      "id": "REQ-2",
+      "requirement": "In backend/main.mo, when TEST_RECOVERY_MODE is true, bypass access-control permission denials inside generateFullBodyWorkout()/generateUpperBodyWorkout()/generateLowerBodyWorkout() (or their helpers) so generation proceeds; keep behavior unchanged when false.",
+      "reason": "Although AccessControl is imported, the diff summary provides no evidence of conditional bypass logic tied to TEST_RECOVERY_MODE in the generate functions or access-control helpers (and the file is truncated, so this cannot be verified).",
       "evidence": [
-        "frontend/src/lib/workoutPreviewSections.ts",
-        "frontend/src/pages/WorkoutPreviewPage.tsx (truncated; rendering not shown)"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-11",
-      "requirement": "Ensure unexpected muscle groups render only after Core in a stable deterministic order and do not break ordering/crash.",
-      "reason": "The helper sorts unexpected groups alphabetically and appends them, but the diff summary is truncated before showing that WorkoutPreviewPage uses this helper output for top-level rendering, so end-to-end behavior cannot be confirmed from the provided evidence.",
+      "id": "REQ-3",
+      "requirement": "In backend/main.mo, remove trapping/aborting behavior in the TEST_RECOVERY_MODE branch of recovery/exercise-count logic so test mode returns valid exercise counts and does not trap.",
+      "reason": "The diff excerpt shows Runtime imported but does not show any changes removing Runtime.trap (or other aborting behavior) from test-mode recovery/exercise-count logic; no evidence is present in the truncated snippet.",
       "evidence": [
-        "frontend/src/lib/workoutPreviewSections.ts",
-        "frontend/src/pages/WorkoutPreviewPage.tsx (truncated)"
+        "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-12",
-      "requirement": "Build and deploy a new draft containing the frontend preview fixes and report the new draft version number.",
-      "reason": "No evidence in the diff summary of any build/deploy step or any reported draft version number.",
+      "id": "REQ-5",
+      "requirement": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without unrelated logic changes or logging.",
+      "reason": "The diff summary shows significant frontend changes (including console logging helpers and other behavior changes) that go beyond the narrowly-scoped backend fixes requested, so it is not 'only the functional fixes described' in REQ-1..REQ-4.",
       "evidence": [
-        "File diff summary contains no draft/version output"
+        "frontend/src/hooks/useQueries.ts (truncated)",
+        "frontend-file-summaries.txt (truncated)",
+        "frontend/src/pages/WorkoutSessionPage.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Backend state migration added and backend actor updated to use migration clause.",
-      "reason": "BuildRequest explicitly constrained: 'Do not change backend code for this request.' The diff adds backend/migration.mo and modifies backend/main.mo.",
+      "description": "Added frontend debug logging utility that prints timestamped console logs.",
+      "reason": "BuildRequest explicitly constrained: \"Do not add logging.\" This new console logging helper and log calls are unrelated to the required backend-only fixes.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
+        "frontend/src/hooks/useQueries.ts (truncated) — function logWithTimestamp() uses console.log and is referenced in validateWorkout()"
       ]
     },
     {
-      "description": "Expanded/stubbed React Query hooks and extensive logging/error-handling/validation changes in useQueries.ts unrelated to workout preview ordering/Core visibility.",
-      "reason": "Not requested by REQ-9/10/11; scope is workout preview rendering order and Lower Body/Core preview composition.",
+      "description": "Introduced a frontend DEFAULT_PROFILE constant with values that differ from the required backend fallback snippet (e.g., gender male, trainingFrequency fourDays, darkMode true, muscleGroupRestInterval 5).",
+      "reason": "REQ-1 required a backend default-profile fallback with exact specified values (gender=#other, bodyweight=70.0, weightUnit=#kg, trainingFrequency=#threeDays, darkMode=false, restTime=90, muscleGroupRestInterval=48). The diff adds a frontend default profile with different values and location (frontend), which was not requested.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend-file-summaries.txt (useQueries description mentions stub implementations and additional logic)"
+        "frontend/src/hooks/useQueries.ts (truncated) — DEFAULT_PROFILE values"
       ]
     },
     {
-      "description": "WorkoutSessionPage behavior changes (e.g., added/confetti/PR detection/leg aggregation/session features per summary) not requested.",
-      "reason": "BuildRequest targets WorkoutPreviewPage rendering only; workout session UI changes are out of scope.",
+      "description": "Changed frontend generation hook behavior so useGenerateFullBodyWorkout and useGenerateUpperBodyWorkout call the backend's generateLowerBodyWorkout (per summary).",
+      "reason": "The BuildRequest only asked for backend changes in three generate functions and test-mode bypass; it did not request rerouting full/upper generation calls to lower-body generation.",
       "evidence": [
-        "frontend/src/pages/WorkoutSessionPage.tsx",
-        "frontend-file-summaries.txt (WorkoutSessionPage description)"
+        "frontend-file-summaries.txt (truncated) — mentions updated implementations calling backend generateLowerBodyWorkout for full/upper"
       ]
     },
     {
-      "description": "Global theme/styling changes described for index.css (forced Telegram 2025 dark theme, frosted-glass modals, etc.).",
-      "reason": "Non-goal: 'Do not change global styling/theme beyond what is necessary'—these changes (as described in the summaries) appear broader than required for ordered grouping/Core visibility.",
+      "description": "Multiple new/expanded frontend features and UI/UX behavior changes (e.g., PR detection, confetti celebrations, wake lock integration details, recovery heatmap changes, theme enforcement, 'Test Mode' badge behavior).",
+      "reason": "Non-goals/constraints explicitly disallow new UI features or unrelated changes; the request was narrowly scoped to backend generation enablement in test mode and default profile fallback.",
       "evidence": [
-        "frontend-file-summaries.txt (frontend/src/index.css description)"
+        "frontend-file-summaries.txt (truncated) — extensive feature additions across many frontend files",
+        "frontend/src/pages/WorkoutSessionPage.tsx (truncated) — many additional session-management/UI behaviors implied by imports and state"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.78,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/lib/workoutPreviewSections.ts",
-    "frontend/src/pages/WorkoutPreviewPage.tsx",
     "frontend/src/pages/WorkoutSessionPage.tsx",
+    "frontend/src/types.ts",
     "project_state.json"
   ]
 }
