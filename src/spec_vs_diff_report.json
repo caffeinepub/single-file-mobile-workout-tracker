@@ -1,82 +1,30 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T17:57:57.642Z",
-  "summary": "The diff does not provide evidence that the required backend fixes were implemented in backend/main.mo (default profile auto-creation in the three generate functions, test-mode access-control bypass, and removal of traps/aborts in test-mode recovery logic). Instead, substantial frontend-side changes were introduced, including added console logging/debug helpers and a frontend DEFAULT_PROFILE with values that do not match the requested backend fallback profile.",
+  "generatedAt": "2026-02-09T18:23:39.326Z",
+  "summary": "The diff does not provide evidence that the specified filter change in backend/main.mo (buildShuffledSectionFromArray) was implemented; additionally, project_state.json was modified even though it was not requested by the BuildRequest.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "In backend/main.mo, update generateLowerBodyWorkout(), generateFullBodyWorkout(), and generateUpperBodyWorkout() to auto-create and persist a default UserProfile for the caller when missing, using the exact user-provided fallback snippet at the top of each function.",
-      "reason": "The backend diff excerpt shows type definitions, TEST_RECOVERY_MODE, and the exercise library, but contains no visible changes or additions showing default-profile creation/persistence inside the three generate*Workout functions (and the file is truncated, so this cannot be verified).",
+      "requirement": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the existing broken muscle-group filter that uses e.primaryMuscleGroup.toLower() with the exact provided filter using Text.equal(Text.toLowercase(...), Text.toLowercase(...)), keeping all debug prints and other logic unchanged.",
+      "reason": "The provided backend/main.mo diff is truncated and does not include the buildShuffledSectionFromArray function or the muscle-group filter code, so there is no evidence that the required replacement was made or that e.primaryMuscleGroup.toLower() is no longer referenced.",
       "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "In backend/main.mo, when TEST_RECOVERY_MODE is true, bypass access-control permission denials inside generateFullBodyWorkout()/generateUpperBodyWorkout()/generateLowerBodyWorkout() (or their helpers) so generation proceeds; keep behavior unchanged when false.",
-      "reason": "Although AccessControl is imported, the diff summary provides no evidence of conditional bypass logic tied to TEST_RECOVERY_MODE in the generate functions or access-control helpers (and the file is truncated, so this cannot be verified).",
-      "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "In backend/main.mo, remove trapping/aborting behavior in the TEST_RECOVERY_MODE branch of recovery/exercise-count logic so test mode returns valid exercise counts and does not trap.",
-      "reason": "The diff excerpt shows Runtime imported but does not show any changes removing Runtime.trap (or other aborting behavior) from test-mode recovery/exercise-count logic; no evidence is present in the truncated snippet.",
-      "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without unrelated logic changes or logging.",
-      "reason": "The diff summary shows significant frontend changes (including console logging helpers and other behavior changes) that go beyond the narrowly-scoped backend fixes requested, so it is not 'only the functional fixes described' in REQ-1..REQ-4.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts (truncated)",
-        "frontend-file-summaries.txt (truncated)",
-        "frontend/src/pages/WorkoutSessionPage.tsx (truncated)"
+        "backend/main.mo (truncated; does not show buildShuffledSectionFromArray or the filter change)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added frontend debug logging utility that prints timestamped console logs.",
-      "reason": "BuildRequest explicitly constrained: \"Do not add logging.\" This new console logging helper and log calls are unrelated to the required backend-only fixes.",
+      "description": "Updated/added project tracking metadata in project_state.json (e.g., new_feature_requests entry AR-1, architectural_notes, known_issues).",
+      "reason": "The BuildRequest only asks for a specific code change in backend/main.mo; it does not request modifications to project_state.json or any project state/metadata files.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts (truncated) — function logWithTimestamp() uses console.log and is referenced in validateWorkout()"
-      ]
-    },
-    {
-      "description": "Introduced a frontend DEFAULT_PROFILE constant with values that differ from the required backend fallback snippet (e.g., gender male, trainingFrequency fourDays, darkMode true, muscleGroupRestInterval 5).",
-      "reason": "REQ-1 required a backend default-profile fallback with exact specified values (gender=#other, bodyweight=70.0, weightUnit=#kg, trainingFrequency=#threeDays, darkMode=false, restTime=90, muscleGroupRestInterval=48). The diff adds a frontend default profile with different values and location (frontend), which was not requested.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts (truncated) — DEFAULT_PROFILE values"
-      ]
-    },
-    {
-      "description": "Changed frontend generation hook behavior so useGenerateFullBodyWorkout and useGenerateUpperBodyWorkout call the backend's generateLowerBodyWorkout (per summary).",
-      "reason": "The BuildRequest only asked for backend changes in three generate functions and test-mode bypass; it did not request rerouting full/upper generation calls to lower-body generation.",
-      "evidence": [
-        "frontend-file-summaries.txt (truncated) — mentions updated implementations calling backend generateLowerBodyWorkout for full/upper"
-      ]
-    },
-    {
-      "description": "Multiple new/expanded frontend features and UI/UX behavior changes (e.g., PR detection, confetti celebrations, wake lock integration details, recovery heatmap changes, theme enforcement, 'Test Mode' badge behavior).",
-      "reason": "Non-goals/constraints explicitly disallow new UI features or unrelated changes; the request was narrowly scoped to backend generation enablement in test mode and default profile fallback.",
-      "evidence": [
-        "frontend-file-summaries.txt (truncated) — extensive feature additions across many frontend files",
-        "frontend/src/pages/WorkoutSessionPage.tsx (truncated) — many additional session-management/UI behaviors implied by imports and state"
+        "project_state.json"
       ]
     }
   ],
-  "confidence": 0.78,
+  "confidence": 0.64,
   "changed_files": [
     "backend/main.mo",
-    "frontend-file-summaries.txt",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/WorkoutSessionPage.tsx",
-    "frontend/src/types.ts",
     "project_state.json"
   ]
 }

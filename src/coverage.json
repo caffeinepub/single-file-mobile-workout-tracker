@@ -1,66 +1,33 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T17:57:57.644Z",
+  "generatedAt": "2026-02-09T18:23:39.328Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 1,
+    "total": 1,
+    "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In backend/main.mo, update generateLowerBodyWorkout(), generateFullBodyWorkout(), and generateUpperBodyWorkout() to automatically create and persist a default UserProfile for the caller when userProfiles.get(caller) is null, using the exact fallback code provided by the user and placing it at the top of each function (immediately after the caller check).",
+        "summary": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the existing broken muscle-group filter that uses e.primaryMuscleGroup.toLower() with the exact filter below (and keep all debug prints and all other logic unchanged):\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
-      },
-      {
-        "id": "REQ-2",
-        "summary": "In backend/main.mo, ensure that when TEST_RECOVERY_MODE is true, the generateFullBodyWorkout(), generateUpperBodyWorkout(), and generateLowerBodyWorkout() code paths do not fail due to access control checks: if an access-control permission check fails inside these generate functions (or in helpers they call), bypass the denial when TEST_RECOVERY_MODE is true and allow workout generation to proceed.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "In backend/main.mo, ensure TEST_RECOVERY_MODE truly allows workout generation by removing any trapping/aborting behavior in the TEST_RECOVERY_MODE branch of recovery/exercise-count logic (e.g., do not call Runtime.trap in test mode); in test mode, the recovery/exercise-count logic must return valid exercise counts so the generate*Workout functions can always assemble a non-empty exercise list when the library contains matching exercises.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-4",
-        "summary": "Keep TEST_RECOVERY_MODE set to true in backend/main.mo (do not change the flag value).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without introducing unrelated logic changes.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts"
-        ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/WorkoutSessionPage.tsx",
-    "frontend/src/types.ts",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

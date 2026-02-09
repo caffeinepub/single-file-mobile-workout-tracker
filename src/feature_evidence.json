@@ -1,27 +1,4 @@
 {
   "kind": "feature_evidence_report",
-  "features": [
-    {
-      "featureId": "feature-build-and-deploy-a-new-draft-containing-only-the-functional-fixes-described-in-req-1-through-req-4-without-introducing-unrelated-logic-changes",
-      "featureTitle": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without introducing unrelated logic changes.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "qr-code@1.0.0",
-        "camera@1.0.0",
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-5"
-      ],
-      "confidence": "high"
-    }
-  ]
+  "features": []
 }

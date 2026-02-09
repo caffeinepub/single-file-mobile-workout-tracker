@@ -1,66 +1,26 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Workout generator app: fix workout generation failures (\"Failed to generate workout\") across Full/Upper/Lower Body generation flows, especially in test mode.",
+  "summary": "New project",
   "architectural_notes": [
-    "Workout generation functions should auto-create a default UserProfile for caller when missing to avoid hard failure during generation.",
-    "In TEST_RECOVERY_MODE, generation should bypass recovery gating (and any access-control blocks if applicable) so workouts can always be generated for testing."
+    "String normalization/comparison in filters should use Text.toLowercase(...) and Text.equal(...); do not use .toLower() on Text."
   ],
   "known_issues": [
-    "Bug: Clicking Generate for Full/Upper/Lower Body results in \"Failed to generate workout\" and no exercises returned, even with test recovery mode active."
+    "Workout generation bug: Upper/Full/Lower workouts only generate Legs due to invalid filter using e.primaryMuscleGroup.toLower() instead of Text.toLowercase(...)."
   ],
   "isFixRequest": true,
-  "existing_features": [
-    {
-      "id": "feature-build-and-deploy-a-new-draft-containing-only-the-functional-fixes-described-in-req-1-through-req-4-without-introducing-unrelated-logic-changes",
-      "title": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without introducing unrelated logic changes.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    }
-  ],
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix \"Failed to generate workout\" by adding default user profile fallback and ensuring test mode bypasses profile/access-control/recovery blockers in generateFullBodyWorkout/generateUpperBodyWorkout/generateLowerBodyWorkout",
-      "reqIds": [],
-      "status": "in_progress"
-    },
-    {
-      "id": "AR-2",
-      "summary": "In backend/main.mo, update generateLowerBodyWorkout(), generateFullBodyWorkout(), and generateUpperBodyWorkout() to automatically create and persist a default UserProfile for the caller when userProfiles.get(caller) is null, using the exact fallback code provided by the user and placing it at the top of each function (immediately after the caller check).",
+      "summary": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the existing broken muscle-group filter that uses e.primaryMuscleGroup.toLower() with the exact filter below (and keep all debug prints and all other logic unchanged):\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "In backend/main.mo, ensure that when TEST_RECOVERY_MODE is true, the generateFullBodyWorkout(), generateUpperBodyWorkout(), and generateLowerBodyWorkout() code paths do not fail due to access control checks: if an access-control permission check fails inside these generate functions (or in helpers they call), bypass the denial when TEST_RECOVERY_MODE is true and allow workout generation to proceed.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "In backend/main.mo, ensure TEST_RECOVERY_MODE truly allows workout generation by removing any trapping/aborting behavior in the TEST_RECOVERY_MODE branch of recovery/exercise-count logic (e.g., do not call Runtime.trap in test mode); in test mode, the recovery/exercise-count logic must return valid exercise counts so the generate*Workout functions can always assemble a non-empty exercise list when the library contains matching exercises.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Keep TEST_RECOVERY_MODE set to true in backend/main.mo (do not change the flag value).",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "status": "pending"
     }
   ],
-  "projectName": "Fix workout generation failure by auto-creating default user profile and bypassing blockers in test recovery mode",
+  "projectName": "Fix invalid Motoko Text lowercase filter in workout grouping",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

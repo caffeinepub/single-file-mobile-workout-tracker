@@ -1,106 +1,35 @@
 {
   "kind": "build_request",
-  "title": "Fix workout generation failure by auto-creating default user profile and bypassing blockers in test recovery mode",
+  "title": "Fix invalid Motoko Text lowercase filter in workout grouping",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In backend/main.mo, update generateLowerBodyWorkout(), generateFullBodyWorkout(), and generateUpperBodyWorkout() to automatically create and persist a default UserProfile for the caller when userProfiles.get(caller) is null, using the exact fallback code provided by the user and placing it at the top of each function (immediately after the caller check).",
+      "text": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the existing broken muscle-group filter that uses e.primaryMuscleGroup.toLower() with the exact filter below (and keep all debug prints and all other logic unchanged):\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "If userProfiles.get(caller) == null, create a default profile automatically instead of returning #err",
-          "Use this minimal default profile fallback (add at top of each function after caller check):\n\nlet profile = switch (userProfiles.get(caller)) {\n  case (null) {\n    let defaultProfile : UserProfile = {\n      gender = #other;\n      bodyweight = 70.0;\n      weightUnit = #kg;\n      trainingFrequency = #threeDays;\n      darkMode = false;\n      restTime = 90;\n      muscleGroupRestInterval = 48;\n    };\n    userProfiles.add(caller, defaultProfile);\n    defaultProfile\n  };\n  case (?p) { p };\n};"
+          "The filter uses invalid syntax: e.primaryMuscleGroup.toLower() — Text has no toLower(), only Text.toLowercase().\n\nNEEDED:\nIn buildShuffledSectionFromArray, replace the broken filter with:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all debug prints and other logic unchanged."
         ]
       },
       "acceptanceCriteria": [
-        "Calling generateFullBodyWorkout(), generateUpperBodyWorkout(), or generateLowerBodyWorkout() with no existing profile for the caller does not return #err(#userProfileNotFound(...)) (or any equivalent profile-missing error) and instead creates a profile entry for caller in userProfiles.",
-        "The default profile values match the user-provided snippet exactly (gender=#other, bodyweight=70.0, weightUnit=#kg, trainingFrequency=#threeDays, darkMode=false, restTime=90, muscleGroupRestInterval=48)."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "In backend/main.mo, ensure that when TEST_RECOVERY_MODE is true, the generateFullBodyWorkout(), generateUpperBodyWorkout(), and generateLowerBodyWorkout() code paths do not fail due to access control checks: if an access-control permission check fails inside these generate functions (or in helpers they call), bypass the denial when TEST_RECOVERY_MODE is true and allow workout generation to proceed.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "If access control fails, bypass for test mode or log and continue",
-          "Ensure test mode always allows generation (override recovery if needed)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "With TEST_RECOVERY_MODE = true, generating Full Body / Upper Body / Lower Body does not return #err(#unauthorized(...)) for non-admin/non-initialized access-control states.",
-        "With TEST_RECOVERY_MODE = false, existing access control behavior remains unchanged."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "In backend/main.mo, ensure TEST_RECOVERY_MODE truly allows workout generation by removing any trapping/aborting behavior in the TEST_RECOVERY_MODE branch of recovery/exercise-count logic (e.g., do not call Runtime.trap in test mode); in test mode, the recovery/exercise-count logic must return valid exercise counts so the generate*Workout functions can always assemble a non-empty exercise list when the library contains matching exercises.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Ensure test mode always allows generation (override recovery if needed)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When TEST_RECOVERY_MODE is true, calling the generateFullBodyWorkout(), generateUpperBodyWorkout(), and generateLowerBodyWorkout() endpoints does not trap/abort and returns #ok with exercises when the exercise library contains exercises for the requested muscle groups.",
-        "No new logging is added as part of this change."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Keep TEST_RECOVERY_MODE set to true in backend/main.mo (do not change the flag value).",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Keep TEST_RECOVERY_MODE = true"
-        ]
-      },
-      "acceptanceCriteria": [
-        "backend/main.mo still has TEST_RECOVERY_MODE set to true after the changes."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Build and deploy a new draft containing only the functional fixes described in REQ-1 through REQ-4, without introducing unrelated logic changes.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Apply this change to the project and build a new draft NOW",
-          "Do NOT change other logic"
-        ]
-      },
-      "acceptanceCriteria": [
-        "A new draft is produced and deployable.",
-        "The draft includes the default-profile fallback in all three generate functions and test-mode bypasses as specified, and does not add debug logging."
+        "backend/main.mo compiles without errors and no longer references e.primaryMuscleGroup.toLower() anywhere.",
+        "Workout generation for Upper Body and Full Body includes non-leg muscle groups (e.g., Chest/Back/Shoulders/Arms/Core) when matching exercises exist in the library.",
+        "All existing debug prints in buildShuffledSectionFromArray remain present and unchanged."
       ]
     }
   ],
   "constraints": [
-    "Do not add logging.",
-    "Do not ask the user for more code or further confirmation in order to apply this fix.",
-    "Keep TEST_RECOVERY_MODE = true.",
-    "Do not change unrelated logic outside of enabling generation in test mode and adding the default profile fallback in the three specified generate functions."
+    "Backend must remain single-actor (all logic in backend/main.mo).",
+    "Do not change any logic in buildShuffledSectionFromArray other than the specified filter replacement.",
+    "Keep all existing debug prints unchanged."
   ],
   "nonGoals": [
-    "Adding new UI features or changing the workout preview layout.",
-    "Implementing third-party auth or any external database/storage.",
-    "Adding new exercise content to the library."
+    "Do not refactor or redesign the workout generation algorithm beyond the specified filter fix.",
+    "Do not change TEST_RECOVERY_MODE behavior or access control behavior as part of this request."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,22 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Wire frontend workout generation hooks to backend generate*Workout fixes for draft deployment",
-  "requirements": [
-    {
-      "id": "REQ-5",
-      "summary": "Update frontend workout generation hooks to call backend generateFullBodyWorkout/generateUpperBodyWorkout/generateLowerBodyWorkout and handle Result responses so the new draft reflects only the intended functional fixes.",
-      "acceptanceCriteria": [
-        "A new draft is produced and deployable.",
-        "The draft includes the default-profile fallback in all three generate functions and test-mode bypasses as specified, and does not add debug logging."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Replace the placeholder implementations in useGenerateFullBodyWorkout() and useGenerateUpperBodyWorkout() to call the backend capabilities generateFullBodyWorkout() and generateUpperBodyWorkout(), handle ok/err Result responses consistently with useGenerateLowerBodyWorkout(), validate/convert the returned WorkoutWithNote into the frontend Workout shape, and keep existing error/toast behavior without adding new logging."
-        }
-      ]
-    }
-  ]
+  "title": "Frontend plan: no changes required for Motoko Text lowercase filter fix",
+  "requirements": []
 }

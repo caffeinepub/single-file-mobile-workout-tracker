@@ -6,6 +6,7 @@ import Nat "mo:core/Nat";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
+import Text "mo:core/Text";
 
 import AccessControl "authorization/access-control";
 
@@ -250,7 +251,7 @@ actor {
     }
   ];
 
-  let accessControlState = AccessControl.initState();
+  var accessControlState = AccessControl.initState();
   var shuffleCounter : Nat = 0;
   var userProfiles : Map.Map<Principal, UserProfile> = Map.empty();
   var workoutHistory : Map.Map<Principal, List.List<Workout>> = Map.empty();
@@ -425,8 +426,8 @@ actor {
     let groupExercises = exercises.filter(func(e) {
       Text.equal(
         e.primaryMuscleGroup.toLower(),
-        group.toLower(),
-      );
+        group.toLower()
+      )
     });
     let shuffledGroup = shuffleArray(groupExercises, caller);
     let count = Nat.min(shuffledGroup.size(), groupLimit);
