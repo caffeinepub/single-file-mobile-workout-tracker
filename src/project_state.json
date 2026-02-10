@@ -1,21 +1,46 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
+  "projectStateVersion": 5,
   "summary": "New project",
   "architectural_notes": [
-    "String normalization/comparison in filters should use Text.toLowercase(...) and Text.equal(...); do not use .toLower() on Text."
+    "String normalization/comparison in filters should use Text.toLowercase(...) and Text.equal(...); do not use .toLower() on Text.",
+    "The filter fix is specified as an exact replacement of the let groupExercises block in buildShuffledSectionFromArray (around lines 117-122), using the existing imported Text module and leaving TEST_RECOVERY_MODE=true and Debug.print statements unchanged."
   ],
   "known_issues": [
-    "Workout generation bug: Upper/Full/Lower workouts only generate Legs due to invalid filter using e.primaryMuscleGroup.toLower() instead of Text.toLowercase(...)."
+    "Workout generation bug: Upper/Full/Lower workouts only generate Legs due to invalid filter using e.primaryMuscleGroup.toLower() instead of Text.toLowercase(...).",
+    "Build/draft workflow instability: reported 'AI was unable to implement your request' during build, plus version/draft confusion (UI showing 348 while 349 claimed as latest) preventing access to the draft."
   ],
   "isFixRequest": true,
-  "existing_features": [],
+  "existing_features": [
+    {
+      "id": "feature-trigger-a-new-successful-draft-build-after-applying-the-backend-change-so-the-updated-backend-can-be-tested-e-g-generating-a-lower-body-workout-should-no-longer-return-only-core-exercises",
+      "title": "Trigger a new successful draft build after applying the backend change so the updated backend can be tested (e.g., generating a \"Lower Body\" workout should no longer return only Core exercises).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    }
+  ],
   "new_feature_requests": [
     {
       "id": "AR-1",
       "summary": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the existing broken muscle-group filter that uses e.primaryMuscleGroup.toLower() with the exact filter below (and keep all debug prints and all other logic unchanged):\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});",
       "reqIds": [
         "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "After applying the Text.toLowercase filter fix in buildShuffledSectionFromArray, trigger a new successful draft build so the fix is actually available to test (resolve draft/version confusion between 348 vs 349).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the entire existing `let groupExercises = exercises.filter(...)` block (currently using invalid Motoko dot-syntax like `e.primaryMuscleGroup.toLower()` / `group.toLower()`) with the following exact Motoko code, using the already-imported Text module:\n\n```motoko\n    let groupExercises = exercises.filter(func(e) {\n      Text.equal(\n        Text.toLowercase(e.primaryMuscleGroup),\n        Text.toLowercase(group)\n      )\n    });\n```\n\nKeep all other logic exactly as-is, including any `Debug.print` statements and `TEST_RECOVERY_MODE = true`.",
+      "reqIds": [
+        "REQ-2"
       ],
       "status": "pending"
     }

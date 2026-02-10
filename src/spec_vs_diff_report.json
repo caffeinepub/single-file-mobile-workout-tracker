@@ -1,30 +1,45 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T18:23:39.326Z",
-  "summary": "The diff does not provide evidence that the specified filter change in backend/main.mo (buildShuffledSectionFromArray) was implemented; additionally, project_state.json was modified even though it was not requested by the BuildRequest.",
+  "generatedAt": "2026-02-10T17:46:40.109Z",
+  "summary": "The diff does not show the required backend filter fix in backend/main.mo. Only a deployment retry log and project_state metadata were modified, which does not implement the specified Motoko code replacement or allow verification of a successful draft build.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the existing broken muscle-group filter that uses e.primaryMuscleGroup.toLower() with the exact provided filter using Text.equal(Text.toLowercase(...), Text.toLowercase(...)), keeping all debug prints and other logic unchanged.",
-      "reason": "The provided backend/main.mo diff is truncated and does not include the buildShuffledSectionFromArray function or the muscle-group filter code, so there is no evidence that the required replacement was made or that e.primaryMuscleGroup.toLower() is no longer referenced.",
+      "id": "REQ-2",
+      "requirement": "In backend/main.mo within buildShuffledSectionFromArray, replace the entire `let groupExercises = exercises.filter(...)` block with the exact provided Text.equal/Text.toLowercase code, keeping all other logic (Debug.print, TEST_RECOVERY_MODE=true, etc.) unchanged.",
+      "reason": "No changes to backend/main.mo are present in the diff summary; therefore the exact filter block replacement cannot be verified as implemented.",
       "evidence": [
-        "backend/main.mo (truncated; does not show buildShuffledSectionFromArray or the filter change)"
+        "file-diff shows only modified files: frontend/DEPLOY_RETRY.md, project_state.json; no backend/main.mo changes listed"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Trigger a new successful draft build after applying the backend change so the updated backend can be tested (e.g., Lower Body workouts include leg exercises).",
+      "reason": "The diff only adds/updates documentation stating an intent to trigger a build; it contains no evidence of an actual successful draft build completion or test outcome.",
+      "evidence": [
+        "frontend/DEPLOY_RETRY.md"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Updated/added project tracking metadata in project_state.json (e.g., new_feature_requests entry AR-1, architectural_notes, known_issues).",
-      "reason": "The BuildRequest only asks for a specific code change in backend/main.mo; it does not request modifications to project_state.json or any project state/metadata files.",
+      "description": "Added/updated a deployment retry log document to trigger build/deploy cycles (DEPLOY_RETRY.md) and described backend changes there.",
+      "reason": "The BuildRequest is specifically about changing backend/main.mo and triggering a draft build; it does not request adding/modifying frontend documentation files.",
+      "evidence": [
+        "frontend/DEPLOY_RETRY.md"
+      ]
+    },
+    {
+      "description": "Modified project_state.json to add new_feature_requests entries (AR-1..AR-4), architectural notes, and known issues.",
+      "reason": "The BuildRequest does not request changes to project_state.json or adding internal tracking/metadata.",
       "evidence": [
         "project_state.json"
       ]
     }
   ],
-  "confidence": 0.64,
+  "confidence": 0.78,
   "changed_files": [
-    "backend/main.mo",
+    "frontend/DEPLOY_RETRY.md",
     "project_state.json"
   ]
 }

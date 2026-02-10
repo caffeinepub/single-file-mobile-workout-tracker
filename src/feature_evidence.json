@@ -1,4 +1,27 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-trigger-a-new-successful-draft-build-after-applying-the-backend-change-so-the-updated-backend-can-be-tested-e-g-generating-a-lower-body-workout-should-no-longer-return-only-core-exercises",
+      "featureTitle": "Trigger a new successful draft build after applying the backend change so the updated backend can be tested (e.g., generating a \"Lower Body\" workout should no longer return only Core exercises).",
+      "files": [
+        "frontend/DEPLOY_RETRY.md"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "http-outcalls@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

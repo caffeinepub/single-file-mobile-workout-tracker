@@ -1,9 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the invalid Motoko lowercase call in workout grouping so exercises are correctly matched to muscle groups during workout generation.
+**Goal:** Fix the Motoko case-insensitive muscle-group filter so workout generation selects exercises from the correct muscle group.
 
 **Planned changes:**
-- In `backend/main.mo`, update `buildShuffledSectionFromArray` to replace the current broken muscle-group filter that uses `e.primaryMuscleGroup.toLower()` with the provided `Text.toLowercase(...)` + `Text.equal(...)` filter, leaving all other logic and debug prints unchanged.
+- In `backend/main.mo` within `buildShuffledSectionFromArray`, replace the existing `let groupExercises = exercises.filter(...)` block with the provided Motoko code using `Text.toLowercase` and `Text.equal`.
+- Trigger a new successful draft build after applying the backend change.
 
-**User-visible outcome:** Workout generation (including Upper Body and Full Body) correctly includes exercises from non-leg muscle groups (e.g., Chest/Back/Shoulders/Arms/Core) when they exist in the exercise library, and the backend compiles without the invalid `toLower()` usage.
+**User-visible outcome:** Generating workouts (e.g., “Lower Body”) returns exercises from the intended muscle groups rather than incorrectly matching (such as returning only Core exercises).
