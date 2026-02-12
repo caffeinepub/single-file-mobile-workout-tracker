@@ -1,56 +1,65 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T20:30:02.592Z",
-  "summary": "The diff does not show the required backend change in backend/main.mo. Instead, it contains extensive frontend-related modifications (and deployment log/state file updates) that were not requested and violate the constraint to avoid frontend changes for this task.",
+  "generatedAt": "2026-02-12T22:58:24.647Z",
+  "summary": "Frontend Header no longer shows any Test Mode UI, but the diff does not provide enough evidence that all backend TEST_RECOVERY_MODE/test-recovery logic and any related backend API surface (and generated bindings) were removed. A new backend migration module still references TEST_RECOVERY_MODE in the old actor shape, which conflicts with the goal of removing test-recovery mode from the backend.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "In backend/main.mo, replace the invalid filter using e.primaryMuscleGroup.toLower() inside buildShuffledSectionFromArray with the exact provided block using Text.equal and Text.toLowercase, keeping all Debug.print statements and all other logic unchanged.",
-      "reason": "No change to backend/main.mo is shown in the diff summary; there is no evidence the filter was updated or that Debug.print statements were preserved unchanged.",
+      "requirement": "Remove the TEST_RECOVERY_MODE flag and all TEST_RECOVERY/test-recovery logic from the Motoko backend so workout generation always uses normal recovery-based selection logic.",
+      "reason": "The diff does not show removal of TEST_RECOVERY_MODE/test-recovery logic from backend/main.mo (file is truncated), and a newly added backend migration module still includes TEST_RECOVERY_MODE in the old actor state type, indicating the flag still exists somewhere in backend code.",
       "evidence": [
-        "frontend-file-summaries.txt (only frontend files summarized; no backend/main.mo shown)",
-        "project_state.json (REQ-1 still marked \"pending\")",
-        "frontend/DEPLOY_RETRY.md (claims a backend fix but does not include code evidence)"
+        "backend/main.mo (truncated; no evidence of removal)",
+        "backend/migration.mo (defines OldActor.TEST_RECOVERY_MODE : Bool)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
-      "reason": "The diff provides no concrete build/deploy/version artifact (only a markdown log statement). There is no evidence of an actual version bump or deployment output.",
+      "requirement": "Remove any backend API surface used to expose test recovery mode status and update generated frontend/backend bindings accordingly.",
+      "reason": "The diff does not show removal of any backend method (e.g., isTestRecoveryModeEnabled) from backend/main.mo, nor any changes to generated frontend/backend bindings/typings that would remove such a method. With truncation, there is insufficient evidence that the API surface and bindings were updated.",
       "evidence": [
-        "frontend/DEPLOY_RETRY.md (mentions \"Version 350+\" but is only documentation)",
-        "project_state.json (REQ-2 still marked \"pending\")"
+        "backend/main.mo (truncated; no evidence of removed query/method)",
+        "frontend/src/hooks/useQueries.ts (truncated; no evidence of bindings update)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Remove the frontend hook/query usage for test recovery mode status (e.g., useIsTestRecoveryModeEnabled) and stop querying ['testRecoveryMode'].",
+      "reason": "Header.tsx no longer renders a Test Mode badge, but the diff for frontend/src/hooks/useQueries.ts is truncated and does not explicitly show that useIsTestRecoveryModeEnabled (or an equivalent hook) and the ['testRecoveryMode'] query were removed.",
+      "evidence": [
+        "frontend/src/components/Header.tsx (no test mode badge)",
+        "frontend/src/hooks/useQueries.ts (truncated; does not confirm hook/query removal)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Large-scale Telegram-themed dark UI styling and multiple frontend UI/UX and state-management changes (navigation, onboarding, workout session features, recovery heatmap enhancements, etc.).",
-      "reason": "BuildRequest explicitly scoped the change to a backend Motoko filter fix and listed frontend changes as non-goals; these frontend modifications are unrelated to REQ-1/REQ-2.",
+      "description": "Added a backend migration module and wiring (actor uses `with migration = Migration.run`) which was not requested by the BuildRequest.",
+      "reason": "BuildRequest only asked to remove TEST_RECOVERY_MODE/test mode UI and APIs; it did not request adding migration infrastructure.",
       "evidence": [
-        "frontend-file-summaries.txt (e.g., frontend/src/index.css, frontend/src/App.tsx, frontend/src/pages/*, frontend/src/components/*, frontend/src/hooks/useQueries.ts)"
+        "backend/migration.mo",
+        "backend/main.mo (imports Migration; uses `(with migration = Migration.run)`)"
       ]
     },
     {
-      "description": "Creation/update of a deployment retry log file to trigger builds (frontend/DEPLOY_RETRY.md).",
-      "reason": "Not requested by the BuildRequest requirements; REQ-2 asks to build/deploy, not to add a retry-log documentation mechanism.",
+      "description": "Introduced extensive new frontend behavior (comprehensive error handling/logging, workout validation, vibration handling, wake lock, PR detection/confetti, weighted-average feature flag for legs recovery, etc.) beyond removing test-mode UI.",
+      "reason": "Non-goals explicitly say not to redesign beyond removing test recovery shortcut/toggle behavior and not to add new features/settings related to test mode; these additions are unrelated to test-mode removal and appear as new functionality.",
       "evidence": [
-        "frontend/DEPLOY_RETRY.md"
-      ]
-    },
-    {
-      "description": "Modifying project tracking/state metadata (project_state.json) to add/track AR-1/AR-2 items.",
-      "reason": "Not requested by REQ-1/REQ-2; this is process metadata rather than implementing the backend filter fix or proving a deployed build.",
-      "evidence": [
-        "project_state.json"
+        "frontend-file-summaries.txt (describes many new behaviors in App.tsx, useQueries.ts, WorkoutSessionPage.tsx, RecoveryHeatmap.tsx, etc.)",
+        "frontend/src/pages/NewWorkoutPage.tsx (adds vibration + UI changes; truncated)",
+        "frontend/src/pages/WorkoutPreviewPage.tsx (adds validation/regeneration behavior; truncated)"
       ]
     }
   ],
-  "confidence": 0.84,
+  "confidence": 0.55,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/DEPLOY_RETRY.md",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/NewWorkoutPage.tsx",
+    "frontend/src/pages/WorkoutPreviewPage.tsx",
     "project_state.json"
   ]
 }

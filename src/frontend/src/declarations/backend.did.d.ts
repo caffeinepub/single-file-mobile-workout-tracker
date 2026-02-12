@@ -103,7 +103,6 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], Result_1>,
   'initializeAccessControl' : ActorMethod<[], undefined>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'isTestRecoveryModeEnabled' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], Result>,
 }
 export declare const idlService: IDL.ServiceClass;

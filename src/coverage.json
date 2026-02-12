@@ -1,41 +1,59 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T20:30:02.595Z",
+  "generatedAt": "2026-02-12T22:58:24.650Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
+    "total": 3,
     "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In backend/main.mo, update the filter inside buildShuffledSectionFromArray to remove the invalid Motoko method call e.primaryMuscleGroup.toLower() and replace the filter with exactly the following block:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all existing Debug.print statements and all other logic in buildShuffledSectionFromArray unchanged.",
+        "summary": "Remove the TEST_RECOVERY_MODE flag and all TEST_RECOVERY/test-recovery logic from the Motoko backend, so workout generation always uses the normal recovery-based selection logic.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
+        "summary": "Remove any backend API surface used to expose test recovery mode status (e.g., an isTestRecoveryModeEnabled query) and update the generated frontend/backend bindings accordingly.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/DEPLOY_RETRY.md"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/Header.tsx"
         ],
         "matchedFiles": [
-          "frontend/DEPLOY_RETRY.md"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/Header.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/DEPLOY_RETRY.md",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/NewWorkoutPage.tsx",
+    "frontend/src/pages/WorkoutPreviewPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

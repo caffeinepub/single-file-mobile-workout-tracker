@@ -2,19 +2,17 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [
-    "Motoko: do not call e.primaryMuscleGroup.toLower(); use Text.toLowercase(...) and Text.equal(...) when filtering exercises by primaryMuscleGroup vs group (in buildShuffledSectionFromArray)."
-  ],
+  "architectural_notes": [],
   "known_issues": [
-    "buildShuffledSectionFromArray uses invalid Motoko filter syntax (e.primaryMuscleGroup.toLower()), causing Full Body group filtering to fail; must use Text.toLowercase/Text.equal."
+    "Automated build/update attempt to remove TEST_RECOVERY logic failed (implementation did not go through)"
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-produce-and-deploy-a-new-draft-build-with-version-number-350-or-higher-after-applying-the-backend-filter-fix",
-      "title": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
+      "id": "feature-remove-the-frontend-test-mode-indicator-and-associated-query-hook-usage-that-checks-test-recovery-mode-status",
+      "title": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
       "reqIds": [
-        "REQ-2"
+        "REQ-3"
       ],
       "version": 1
     }
@@ -22,14 +20,28 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "In backend/main.mo, update the filter inside buildShuffledSectionFromArray to remove the invalid Motoko method call e.primaryMuscleGroup.toLower() and replace the filter with exactly the following block:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all existing Debug.print statements and all other logic in buildShuffledSectionFromArray unchanged.",
+      "summary": "Remove TEST_RECOVERY / TEST_RECOVERY_MODE logic completely from the Motoko backend",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Remove the TEST_RECOVERY_MODE flag and all TEST_RECOVERY/test-recovery logic from the Motoko backend, so workout generation always uses the normal recovery-based selection logic.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Remove any backend API surface used to expose test recovery mode status (e.g., an isTestRecoveryModeEnabled query) and update the generated frontend/backend bindings accordingly.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
     }
   ],
-  "projectName": "Fix Motoko filter syntax in buildShuffledSectionFromArray (draft 350 rebuild)",
+  "projectName": "Remove TEST_RECOVERY_MODE from backend and delete related frontend test-mode UI",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

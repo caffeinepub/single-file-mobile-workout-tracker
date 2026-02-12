@@ -120,7 +120,6 @@ export const idlService = IDL.Service({
   'getUserProfile' : IDL.Func([IDL.Principal], [Result_1], ['query']),
   'initializeAccessControl' : IDL.Func([], [], []),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'isTestRecoveryModeEnabled' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [Result], []),
 });
 
@@ -236,7 +235,6 @@ export const idlFactory = ({ IDL }) => {
     'getUserProfile' : IDL.Func([IDL.Principal], [Result_1], ['query']),
     'initializeAccessControl' : IDL.Func([], [], []),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'isTestRecoveryModeEnabled' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [Result], []),
   });
 };

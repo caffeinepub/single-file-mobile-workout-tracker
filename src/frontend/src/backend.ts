@@ -233,7 +233,6 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<Result_1>;
     initializeAccessControl(): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
-    isTestRecoveryModeEnabled(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<Result>;
 }
 import type { AppError as _AppError, Gender as _Gender, LegSubgroupRecovery as _LegSubgroupRecovery, RecoveryStateWithLegs as _RecoveryStateWithLegs, Result as _Result, Result_1 as _Result_1, Result_2 as _Result_2, Result_3 as _Result_3, Result_4 as _Result_4, TrainingFrequency as _TrainingFrequency, UserProfile as _UserProfile, UserRole as _UserRole, WeightUnit as _WeightUnit, WorkoutWithNote as _WorkoutWithNote } from "./declarations/backend.did.d.ts";
@@ -390,20 +389,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
-            return result;
-        }
-    }
-    async isTestRecoveryModeEnabled(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.isTestRecoveryModeEnabled();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.isTestRecoveryModeEnabled();
             return result;
         }
     }

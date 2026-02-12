@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-produce-and-deploy-a-new-draft-build-with-version-number-350-or-higher-after-applying-the-backend-filter-fix",
-      "featureTitle": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
+      "featureId": "feature-remove-the-frontend-test-mode-indicator-and-associated-query-hook-usage-that-checks-test-recovery-mode-status",
+      "featureTitle": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
       "files": [
-        "frontend/DEPLOY_RETRY.md"
+        "frontend/src/components/Header.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@3.0.0",
@@ -19,7 +20,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-3"
       ],
       "confidence": "high"
     }

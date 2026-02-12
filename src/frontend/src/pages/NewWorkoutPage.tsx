@@ -5,13 +5,12 @@ import {
   useGenerateFullBodyWorkout, 
   useGenerateUpperBodyWorkout, 
   useGenerateLowerBodyWorkout,
-  useIsTestRecoveryModeEnabled,
   WorkoutType 
 } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Dumbbell, Loader2, FlaskConical } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Loader2 } from 'lucide-react';
 
 interface NewWorkoutPageProps {
   userProfile: UserProfile;
@@ -25,7 +24,6 @@ export default function NewWorkoutPage({ userProfile, onBack, onWorkoutGenerated
   const generateFullBody = useGenerateFullBodyWorkout();
   const generateUpperBody = useGenerateUpperBodyWorkout();
   const generateLowerBody = useGenerateLowerBodyWorkout();
-  const { data: isTestMode = false } = useIsTestRecoveryModeEnabled();
 
   const handleVibrate = () => {
     if ('vibrate' in navigator) {
@@ -112,20 +110,9 @@ export default function NewWorkoutPage({ userProfile, onBack, onWorkoutGenerated
       <main className="flex-1 px-4 py-6">
         <div className="mx-auto max-w-2xl space-y-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-bold tracking-tight">Choose Your Workout</h2>
-              {isTestMode && (
-                <Badge variant="outline" className="text-xs border-primary/50 text-primary">
-                  <FlaskConical className="h-3 w-3 mr-1" />
-                  Test Mode
-                </Badge>
-              )}
-            </div>
+            <h2 className="text-3xl font-bold tracking-tight">Choose Your Workout</h2>
             <p className="text-lg text-muted-foreground">
-              {isTestMode 
-                ? 'Recovery checks disabled - generate any workout anytime'
-                : 'Select a workout type based on your recovery status'
-              }
+              Select a workout type based on your recovery status
             </p>
           </div>
 

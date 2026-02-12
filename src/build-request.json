@@ -1,55 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Fix Motoko filter syntax in buildShuffledSectionFromArray (draft 350 rebuild)",
-  "priority": "high",
+  "title": "Remove TEST_RECOVERY_MODE from backend and delete related frontend test-mode UI",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In backend/main.mo, update the filter inside buildShuffledSectionFromArray to remove the invalid Motoko method call e.primaryMuscleGroup.toLower() and replace the filter with exactly the following block:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all existing Debug.print statements and all other logic in buildShuffledSectionFromArray unchanged.",
+      "text": "Remove the TEST_RECOVERY_MODE flag and all TEST_RECOVERY/test-recovery logic from the Motoko backend, so workout generation always uses the normal recovery-based selection logic.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-7",
+          "recent-9"
         ],
         "quotes": [
-          "The filter in buildShuffledSectionFromArray is invalid: e.primaryMuscleGroup.toLower() is not valid Motoko.\n\nReplace the filter with this exact block:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all Debug.print statements and other logic unchanged."
+          "remove TEST_RECOVERY completely",
+          "try again"
         ]
       },
       "acceptanceCriteria": [
-        "Project compiles successfully with the updated Motoko filter syntax (no usage of .toLower() on Text values).",
-        "buildShuffledSectionFromArray uses Text.toLowercase and Text.equal exactly as provided for muscle-group matching.",
-        "All pre-existing Debug.print statements in buildShuffledSectionFromArray remain present and unchanged.",
-        "Generating a Full Body workout yields non-empty exercise selections across expected muscle groups (not only Core), assuming exercises exist in the library for those groups."
+        "backend/main.mo no longer defines TEST_RECOVERY_MODE (or any equivalent test recovery toggle).",
+        "Any conditional branches that force fixed exercise counts when TEST_RECOVERY_MODE is enabled are removed (e.g., the early return block in getExerciseCountForGroup).",
+        "The backend compiles successfully and workout generation returns muscle-group-appropriate exercises without relying on any test-mode shortcut logic."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
-      "target": "both",
+      "text": "Remove any backend API surface used to expose test recovery mode status (e.g., an isTestRecoveryModeEnabled query) and update the generated frontend/backend bindings accordingly.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-7"
         ],
         "quotes": [
-          "Apply this change to the project and build a new draft (Version 350) NOW."
+          "remove TEST_RECOVERY completely"
         ]
       },
       "acceptanceCriteria": [
-        "A new draft is built and deployed with a version number >= 350.",
-        "Deployed draft can be used to test generating a Full Body workout end-to-end from the UI."
+        "If backend exposes a method such as isTestRecoveryModeEnabled(), it is removed from backend/main.mo.",
+        "Frontend generated backend typings/build output no longer includes the removed method.",
+        "No frontend code attempts to call a removed backend test-mode method at runtime."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-7"
+        ],
+        "quotes": [
+          "remove TEST_RECOVERY completely"
+        ]
+      },
+      "acceptanceCriteria": [
+        "frontend/src/hooks/useQueries.ts no longer exports useIsTestRecoveryModeEnabled (or any equivalent hook) and no longer queries ['testRecoveryMode'].",
+        "frontend/src/components/Header.tsx no longer imports or calls useIsTestRecoveryModeEnabled, and the 'Test Mode' Badge is no longer rendered.",
+        "The frontend builds successfully with no TypeScript errors related to removed test-mode APIs/hooks."
       ]
     }
   ],
   "constraints": [
-    "Do not change any logic in buildShuffledSectionFromArray other than replacing the invalid filter with the exact block provided by the user.",
-    "Do not remove or modify any existing Debug.print statements.",
-    "Respect the existing single-actor Motoko backend architecture (all logic remains in backend/main.mo).",
-    "Do not modify files under frontend immutablePaths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui)."
+    "Backend must remain a single-actor Motoko architecture (all logic in backend/main.mo).",
+    "Do not edit any files under frontend/src/components/ui or any paths listed in frontend immutablePaths (compose instead).",
+    "Use English for all user-facing text."
   ],
   "nonGoals": [
-    "No UI/UX redesign or new frontend features.",
-    "No changes to workout section ordering logic beyond what is necessary for the filter fix.",
-    "No schema/state migrations unless strictly required by compilation (not expected for this change)."
+    "Do not redesign the workout generation algorithm beyond removing the test recovery shortcut/toggle behavior.",
+    "Do not add new features or settings related to test mode or developer toggles.",
+    "Do not introduce new authentication methods beyond Internet Identity."
   ],
   "imageRequirements": {
     "required": [],

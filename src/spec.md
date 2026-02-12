@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix invalid Motoko filter syntax in `buildShuffledSectionFromArray` and ship a new draft build (v350+).
+**Goal:** Remove all test recovery mode functionality from the backend and delete related frontend “Test Mode” UI so workout generation always runs in normal mode.
 
 **Planned changes:**
-- In `backend/main.mo`, replace the `buildShuffledSectionFromArray` filter logic that uses invalid `e.primaryMuscleGroup.toLower()` with the exact provided `Text.toLowercase` + `Text.equal` filter block.
-- Keep all existing `Debug.print` statements and all other logic in `buildShuffledSectionFromArray` unchanged.
-- Build and deploy a new draft with version number >= 350.
+- Remove `TEST_RECOVERY_MODE` (and any equivalent toggle) and all associated test-recovery branching/shortcut logic from `backend/main.mo`.
+- Remove any backend method used to expose test recovery mode status (e.g., `isTestRecoveryModeEnabled`) and update regenerated frontend/backend bindings so the removed API is no longer referenced.
+- Delete the frontend test-mode query/hook (e.g., `useIsTestRecoveryModeEnabled` and the `['testRecoveryMode']` query) and remove the “Test Mode” badge/indicator from `frontend/src/components/Header.tsx`.
 
-**User-visible outcome:** The deployed draft (v350+) compiles and can generate a Full Body workout end-to-end from the UI with non-empty exercise selections across expected muscle groups (assuming exercises exist for those groups).
+**User-visible outcome:** The app no longer shows any “Test Mode” indicator, and workout generation always uses the standard recovery-based selection logic.

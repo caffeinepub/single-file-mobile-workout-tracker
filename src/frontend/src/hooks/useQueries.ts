@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { useInternetIdentity } from './useInternetIdentity';
 import type { UserProfile, WeightUnit, Gender, TrainingFrequency, WorkoutWithNote as BackendWorkoutWithNote } from '../backend';
 import type { Exercise, WorkoutExercise, Workout, RecoveryState, SetConfiguration, MuscleGroupVolume, MuscleRecovery, LegSubgroupRecovery } from '../types';
 import { toast } from 'sonner';
@@ -362,32 +361,6 @@ export function useUpdateProfile() {
   });
 }
 
-export function useIsTestRecoveryModeEnabled() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-
-  return useQuery<boolean>({
-    queryKey: ['testRecoveryMode'],
-    queryFn: async (): Promise<boolean> => {
-      if (!actor) return false;
-      
-      logWithTimestamp('Checking test recovery mode status');
-      
-      try {
-        const result = await actor.isTestRecoveryModeEnabled();
-        logWithTimestamp('Test recovery mode status:', result);
-        return result;
-      } catch (error) {
-        logWithTimestamp('Error checking test recovery mode:', error);
-        return false;
-      }
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    staleTime: 60000,
-    retry: 1,
-  });
-}
-
 export function useGetAlternativeExercises(muscleGroup: string) {
   const { actor, isFetching } = useActor();
 
@@ -452,7 +425,7 @@ export function useGenerateFullBodyWorkout() {
       
       logWithTimestamp('Generating full body workout');
       
-      const result = await actor.generateLowerBodyWorkout();
+      const result = await actor.generateFullBodyWorkout();
       
       if (result.__kind__ === 'ok') {
         const backendWorkout = result.ok;
@@ -591,7 +564,6 @@ export function useGenerateLowerBodyWorkout() {
 
 export function useGetRecoveryState() {
   const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
 
   return useQuery<RecoveryState>({
     queryKey: ['recoveryState'],
@@ -600,73 +572,64 @@ export function useGetRecoveryState() {
       
       logWithTimestamp('Fetching recovery state');
       
-      try {
-        const result = await actor.getRecoveryState();
+      const result = await actor.getRecoveryState();
+      
+      if (result.__kind__ === 'ok') {
+        const state = result.ok;
         
-        if (result.__kind__ === 'ok') {
-          const state = result.ok;
-          
-          const recoveryState: RecoveryState = {
-            chest: {
-              lastTrained: Number(state.chest.lastTrained),
-              recoveryPercentage: state.chest.recoveryPercentage,
-            },
-            back: {
-              lastTrained: Number(state.back.lastTrained),
-              recoveryPercentage: state.back.recoveryPercentage,
-            },
-            legs: {
-              lastTrained: Number(state.legs.lastTrained),
-              recoveryPercentage: state.legs.recoveryPercentage,
-            },
-            shoulders: {
-              lastTrained: Number(state.shoulders.lastTrained),
-              recoveryPercentage: state.shoulders.recoveryPercentage,
-            },
-            arms: {
-              lastTrained: Number(state.arms.lastTrained),
-              recoveryPercentage: state.arms.recoveryPercentage,
-            },
-            core: {
-              lastTrained: Number(state.core.lastTrained),
-              recoveryPercentage: state.core.recoveryPercentage,
-            },
-            quadsRecovery: {
-              lastTrained: Number(state.quadsRecovery.lastTrained),
-              recoveryPercentage: state.quadsRecovery.recoveryPercentage,
-            },
-            hamstringsRecovery: {
-              lastTrained: Number(state.hamstringsRecovery.lastTrained),
-              recoveryPercentage: state.hamstringsRecovery.recoveryPercentage,
-            },
-            glutesRecovery: {
-              lastTrained: Number(state.glutesRecovery.lastTrained),
-              recoveryPercentage: state.glutesRecovery.recoveryPercentage,
-            },
-            calvesRecovery: {
-              lastTrained: Number(state.calvesRecovery.lastTrained),
-              recoveryPercentage: state.calvesRecovery.recoveryPercentage,
-            },
-          };
-          
-          logWithTimestamp('Recovery state loaded successfully');
-          return recoveryState;
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to fetch recovery state:', errorMsg);
-          throw new Error(errorMsg);
-        }
-      } catch (error) {
-        logWithTimestamp('Failed to fetch recovery state:', error);
-        if (isAuthError(error)) {
-          toast.error('Authentication required. Please log in again.');
-        } else if (isDelegationExpiryError(error)) {
-          toast.error('Session expired. Please log in again.');
-        }
-        throw error;
+        // Convert bigint timestamps to numbers
+        const convertedState: RecoveryState = {
+          chest: {
+            lastTrained: Number(state.chest.lastTrained),
+            recoveryPercentage: state.chest.recoveryPercentage,
+          },
+          back: {
+            lastTrained: Number(state.back.lastTrained),
+            recoveryPercentage: state.back.recoveryPercentage,
+          },
+          legs: {
+            lastTrained: Number(state.legs.lastTrained),
+            recoveryPercentage: state.legs.recoveryPercentage,
+          },
+          shoulders: {
+            lastTrained: Number(state.shoulders.lastTrained),
+            recoveryPercentage: state.shoulders.recoveryPercentage,
+          },
+          arms: {
+            lastTrained: Number(state.arms.lastTrained),
+            recoveryPercentage: state.arms.recoveryPercentage,
+          },
+          core: {
+            lastTrained: Number(state.core.lastTrained),
+            recoveryPercentage: state.core.recoveryPercentage,
+          },
+          quadsRecovery: {
+            lastTrained: Number(state.quadsRecovery.lastTrained),
+            recoveryPercentage: state.quadsRecovery.recoveryPercentage,
+          },
+          hamstringsRecovery: {
+            lastTrained: Number(state.hamstringsRecovery.lastTrained),
+            recoveryPercentage: state.hamstringsRecovery.recoveryPercentage,
+          },
+          glutesRecovery: {
+            lastTrained: Number(state.glutesRecovery.lastTrained),
+            recoveryPercentage: state.glutesRecovery.recoveryPercentage,
+          },
+          calvesRecovery: {
+            lastTrained: Number(state.calvesRecovery.lastTrained),
+            recoveryPercentage: state.calvesRecovery.recoveryPercentage,
+          },
+        };
+        
+        logWithTimestamp('Recovery state loaded successfully');
+        return convertedState;
+      } else {
+        const errorMsg = extractErrorMessage(result.err);
+        logWithTimestamp('Failed to fetch recovery state:', errorMsg);
+        throw new Error(errorMsg);
       }
     },
-    enabled: !!actor && !isFetching && !!identity,
+    enabled: !!actor && !isFetching,
     staleTime: 30000,
     retry: 2,
   });
@@ -674,7 +637,6 @@ export function useGetRecoveryState() {
 
 export function useGetLegSubgroupRecovery() {
   const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
 
   return useQuery<LegSubgroupRecovery>({
     queryKey: ['legSubgroupRecovery'],
@@ -683,55 +645,79 @@ export function useGetLegSubgroupRecovery() {
       
       logWithTimestamp('Fetching leg subgroup recovery');
       
-      try {
-        const result = await actor.getLegSubgroupRecovery();
+      const result = await actor.getLegSubgroupRecovery();
+      
+      if (result.__kind__ === 'ok') {
+        const state = result.ok;
         
-        if (result.__kind__ === 'ok') {
-          const state = result.ok;
-          
-          const legSubgroupRecovery: LegSubgroupRecovery = {
-            quads: {
-              lastTrained: Number(state.quads.lastTrained),
-              recoveryPercentage: state.quads.recoveryPercentage,
-            },
-            hamstrings: {
-              lastTrained: Number(state.hamstrings.lastTrained),
-              recoveryPercentage: state.hamstrings.recoveryPercentage,
-            },
-            glutes: {
-              lastTrained: Number(state.glutes.lastTrained),
-              recoveryPercentage: state.glutes.recoveryPercentage,
-            },
-            calves: {
-              lastTrained: Number(state.calves.lastTrained),
-              recoveryPercentage: state.calves.recoveryPercentage,
-            },
-            legs: {
-              lastTrained: Number(state.legs.lastTrained),
-              recoveryPercentage: state.legs.recoveryPercentage,
-            },
-          };
-          
-          logWithTimestamp('Leg subgroup recovery loaded successfully');
-          return legSubgroupRecovery;
-        } else {
-          const errorMsg = extractErrorMessage(result.err);
-          logWithTimestamp('Failed to fetch leg subgroup recovery:', errorMsg);
-          throw new Error(errorMsg);
-        }
-      } catch (error) {
-        logWithTimestamp('Failed to fetch leg subgroup recovery:', error);
-        if (isAuthError(error)) {
-          toast.error('Authentication required. Please log in again.');
-        } else if (isDelegationExpiryError(error)) {
-          toast.error('Session expired. Please log in again.');
-        }
-        throw error;
+        // Convert bigint timestamps to numbers
+        const convertedState: LegSubgroupRecovery = {
+          quads: {
+            lastTrained: Number(state.quads.lastTrained),
+            recoveryPercentage: state.quads.recoveryPercentage,
+          },
+          hamstrings: {
+            lastTrained: Number(state.hamstrings.lastTrained),
+            recoveryPercentage: state.hamstrings.recoveryPercentage,
+          },
+          glutes: {
+            lastTrained: Number(state.glutes.lastTrained),
+            recoveryPercentage: state.glutes.recoveryPercentage,
+          },
+          calves: {
+            lastTrained: Number(state.calves.lastTrained),
+            recoveryPercentage: state.calves.recoveryPercentage,
+          },
+          legs: {
+            lastTrained: Number(state.legs.lastTrained),
+            recoveryPercentage: state.legs.recoveryPercentage,
+          },
+        };
+        
+        logWithTimestamp('Leg subgroup recovery loaded successfully');
+        return convertedState;
+      } else {
+        const errorMsg = extractErrorMessage(result.err);
+        logWithTimestamp('Failed to fetch leg subgroup recovery:', errorMsg);
+        throw new Error(errorMsg);
       }
     },
-    enabled: !!actor && !isFetching && !!identity,
+    enabled: !!actor && !isFetching,
     staleTime: 30000,
     retry: 2,
+  });
+}
+
+export function useGetSetConfiguration(exerciseName?: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Record<string, SetConfiguration>>({
+    queryKey: ['setConfiguration', exerciseName],
+    queryFn: async (): Promise<Record<string, SetConfiguration>> => {
+      if (!actor) return {};
+      
+      logWithTimestamp('getSetConfiguration not implemented in backend');
+      return {};
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 60000,
+    retry: 1,
+  });
+}
+
+export function useUpdateSuggestedWeightDuringSession() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async ({ exerciseName, newWeight }: { exerciseName: string; newWeight: number }): Promise<number> => {
+      if (!actor) throw new Error('Actor not available');
+      
+      logWithTimestamp('updateSuggestedWeightDuringSession not implemented in backend');
+      return newWeight;
+    },
+    onError: (error) => {
+      logWithTimestamp('Failed to update suggested weight:', error);
+    },
   });
 }
 
@@ -743,25 +729,7 @@ export function useGetWorkoutHistory() {
     queryFn: async (): Promise<Workout[]> => {
       if (!actor) return [];
       
-      logWithTimestamp('Workout history not implemented in backend');
-      // Backend method not implemented yet
-      return [];
-    },
-    enabled: !!actor && !isFetching,
-    staleTime: 60000,
-    retry: 1,
-  });
-}
-
-export function useGetWeeklyMuscleGroupVolume() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<MuscleGroupVolume[]>({
-    queryKey: ['weeklyMuscleGroupVolume'],
-    queryFn: async (): Promise<MuscleGroupVolume[]> => {
-      if (!actor) return [];
-      
-      logWithTimestamp('Weekly muscle group volume not implemented in backend');
+      logWithTimestamp('getWorkoutHistory not implemented in backend');
       // Backend method not implemented yet
       return [];
     },
@@ -780,24 +748,18 @@ export function useSaveWorkout() {
       if (!actor) throw new Error('Actor not available');
       
       logWithTimestamp('saveWorkout not implemented in backend');
+      // Backend method not implemented yet
       return;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workoutHistory'] });
       queryClient.invalidateQueries({ queryKey: ['recoveryState'] });
-      queryClient.invalidateQueries({ queryKey: ['weeklyMuscleGroupVolume'] });
+      queryClient.invalidateQueries({ queryKey: ['legSubgroupRecovery'] });
       toast.success('Workout saved successfully');
     },
     onError: (error) => {
       logWithTimestamp('Failed to save workout:', error);
-      const message = extractErrorMessage(error);
-      if (isAuthError(error)) {
-        toast.error('Authentication required. Please log in again.');
-      } else if (isDelegationExpiryError(error)) {
-        toast.error('Session expired. Please log in again.');
-      } else {
-        toast.error('Failed to save workout');
-      }
+      toast.error('Failed to save workout');
     },
   });
 }
@@ -811,33 +773,15 @@ export function useSaveSetConfiguration() {
       if (!actor) throw new Error('Actor not available');
       
       logWithTimestamp('saveSetConfiguration not implemented in backend');
+      // Backend method not implemented yet
       return;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['setConfiguration', variables.exerciseName] });
-      logWithTimestamp('Set configuration saved');
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['setConfiguration'] });
     },
     onError: (error) => {
       logWithTimestamp('Failed to save set configuration:', error);
     },
-  });
-}
-
-export function useGetSetConfiguration(exerciseName?: string) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<Record<string, SetConfiguration>>({
-    queryKey: ['setConfiguration', exerciseName || 'all'],
-    queryFn: async (): Promise<Record<string, SetConfiguration>> => {
-      if (!actor) return {};
-      
-      logWithTimestamp('getSetConfiguration not implemented in backend');
-      // Backend method not implemented yet
-      return {};
-    },
-    enabled: !!actor && !isFetching,
-    staleTime: 300000,
-    retry: 1,
   });
 }
 
@@ -850,11 +794,11 @@ export function useClearSetConfigurations() {
       if (!actor) throw new Error('Actor not available');
       
       logWithTimestamp('clearSetConfigurations not implemented in backend');
+      // Backend method not implemented yet
       return;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['setConfiguration'] });
-      logWithTimestamp('Set configurations cleared');
     },
     onError: (error) => {
       logWithTimestamp('Failed to clear set configurations:', error);
@@ -862,16 +806,20 @@ export function useClearSetConfigurations() {
   });
 }
 
-export function useUpdateSuggestedWeightDuringSession() {
-  const queryClient = useQueryClient();
+export function useGetWeeklyMuscleGroupVolume() {
+  const { actor, isFetching } = useActor();
 
-  return useMutation({
-    mutationFn: async ({ exerciseName, newWeight }: { exerciseName: string; newWeight: number }) => {
-      logWithTimestamp('updateSuggestedWeightDuringSession - client-side only');
-      return newWeight;
+  return useQuery<MuscleGroupVolume[]>({
+    queryKey: ['weeklyMuscleGroupVolume'],
+    queryFn: async (): Promise<MuscleGroupVolume[]> => {
+      if (!actor) return [];
+      
+      logWithTimestamp('getWeeklyMuscleGroupVolume not implemented in backend');
+      // Backend method not implemented yet
+      return [];
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentWorkout'] });
-    },
+    enabled: !!actor && !isFetching,
+    staleTime: 60000,
+    retry: 1,
   });
 }

@@ -1,77 +1,87 @@
 import Map "mo:core/Map";
-import Principal "mo:core/Principal";
 import List "mo:core/List";
+import Principal "mo:core/Principal";
+import Text "mo:core/Text";
 
 module {
-  type RecoveryState = {
-    chest : { lastTrained : Int; recoveryPercentage : Float };
-    back : { lastTrained : Int; recoveryPercentage : Float };
-    shoulders : { lastTrained : Int; recoveryPercentage : Float };
-    arms : { lastTrained : Int; recoveryPercentage : Float };
-    core : { lastTrained : Int; recoveryPercentage : Float };
-    quadsRecovery : { lastTrained : Int; recoveryPercentage : Float };
-    hamstringsRecovery : { lastTrained : Int; recoveryPercentage : Float };
-    glutesRecovery : { lastTrained : Int; recoveryPercentage : Float };
-    calvesRecovery : { lastTrained : Int; recoveryPercentage : Float };
-  };
+  type Gender = { #male; #female; #other };
+  type WeightUnit = { #kg; #lb };
+  type TrainingFrequency = { #threeDays; #fourDays; #fiveDays };
 
-  type OldActor = {
-    userProfiles : Map.Map<Principal, { gender : { #male; #female; #other }; bodyweight : Float; weightUnit : { #kg; #lb }; trainingFrequency : { #threeDays; #fourDays; #fiveDays }; darkMode : Bool; restTime : Int; muscleGroupRestInterval : Int }>;
-    workoutHistory : Map.Map<Principal, List.List<{ exercises : [WorkoutExercise]; timestamp : Int; totalVolume : Float }>>;
-    recoveryState : Map.Map<Principal, RecoveryState>;
-    workoutSummaries : Map.Map<Principal, List.List<{
-      date : Int;
-      exercises : [Text];
-    }>>;
-    exerciseChanges : Map.Map<Principal, List.List<{ originalExercise : Text; alternativeExercise : Text; timestamp : Int }>>;
-    setConfigurations : Map.Map<Principal, Map.Map<Text, { weight : Float; reps : Nat; sets : Nat }>>;
-    upperBodyLimits : Map.Map<Text, Int>;
-    lowerBodyLimits : Map.Map<Text, Nat>;
-    upperMuscleGroups : [Text];
-    lowerMuscleGroups : [Text];
-    coreMuscleGroup : Text;
-    stableState : ?{
-      var userProfiles : [(Principal, { gender : { #male; #female; #other }; bodyweight : Float; weightUnit : { #kg; #lb }; trainingFrequency : { #threeDays; #fourDays; #fiveDays }; darkMode : Bool; restTime : Int; muscleGroupRestInterval : Int })];
-      var workoutHistory : [(Principal, [{ exercises : [WorkoutExercise]; timestamp : Int; totalVolume : Float }])];
-      var recoveryState : [(Principal, RecoveryState)];
-      var workoutSummaries : [(Principal, [{
-        date : Int;
-        exercises : [Text];
-      }])];
-      var exerciseChanges : [(Principal, [{ originalExercise : Text; alternativeExercise : Text; timestamp : Int }])];
-      var setConfigurations : [(Principal, [(Text, { weight : Float; reps : Nat; sets : Nat })])];
-    };
+  type Exercise = {
+    name : Text;
+    primaryMuscleGroup : Text;
+    equipmentType : Text;
+    demoUrl : Text;
+    recoveryTime : Int;
   };
 
   type WorkoutExercise = {
-    exercise : {
-      name : Text;
-      primaryMuscleGroup : Text;
-      equipmentType : Text;
-      demoUrl : Text;
-      recoveryTime : Int;
-    };
+    exercise : Exercise;
     sets : Nat;
     reps : Nat;
     suggestedWeight : Float;
-    setData : [{ weight : Float; reps : Nat }];
+    setData : [SetData];
+  };
+
+  type Workout = {
+    exercises : [WorkoutExercise];
+    timestamp : Int;
+    totalVolume : Float;
+  };
+
+  type SetData = { weight : Float; reps : Nat };
+
+  type MuscleRecovery = { lastTrained : Int; recoveryPercentage : Float };
+  type RecoveryState = {
+    chest : MuscleRecovery;
+    back : MuscleRecovery;
+    shoulders : MuscleRecovery;
+    arms : MuscleRecovery;
+    core : MuscleRecovery;
+    quadsRecovery : MuscleRecovery;
+    hamstringsRecovery : MuscleRecovery;
+    glutesRecovery : MuscleRecovery;
+    calvesRecovery : MuscleRecovery;
+  };
+
+  type ExerciseChange = {
+    originalExercise : Text;
+    alternativeExercise : Text;
+    timestamp : Int;
+  };
+
+  type SetConfiguration = { weight : Float; reps : Nat; sets : Nat };
+  type UserProfile = {
+    gender : Gender;
+    bodyweight : Float;
+    weightUnit : WeightUnit;
+    trainingFrequency : TrainingFrequency;
+    darkMode : Bool;
+    restTime : Int;
+    muscleGroupRestInterval : Int;
+  };
+
+  type OldActor = {
+    shuffleCounter : Nat;
+    userProfiles : Map.Map<Principal, UserProfile>;
+    workoutHistory : Map.Map<Principal, List.List<Workout>>;
+    recoveryState : Map.Map<Principal, RecoveryState>;
+    exerciseChanges : Map.Map<Principal, List.List<ExerciseChange>>;
+    setConfigurations : Map.Map<Principal, Map.Map<Text, SetConfiguration>>;
+    TEST_RECOVERY_MODE : Bool;
   };
 
   type NewActor = {
-    userProfiles : Map.Map<Principal, { gender : { #male; #female; #other }; bodyweight : Float; weightUnit : { #kg; #lb }; trainingFrequency : { #threeDays; #fourDays; #fiveDays }; darkMode : Bool; restTime : Int; muscleGroupRestInterval : Int }>;
-    workoutHistory : Map.Map<Principal, List.List<{ exercises : [WorkoutExercise]; timestamp : Int; totalVolume : Float }>>;
+    shuffleCounter : Nat;
+    userProfiles : Map.Map<Principal, UserProfile>;
+    workoutHistory : Map.Map<Principal, List.List<Workout>>;
     recoveryState : Map.Map<Principal, RecoveryState>;
-    exerciseChanges : Map.Map<Principal, List.List<{ originalExercise : Text; alternativeExercise : Text; timestamp : Int }>>;
-    setConfigurations : Map.Map<Principal, Map.Map<Text, { weight : Float; reps : Nat; sets : Nat }>>;
+    exerciseChanges : Map.Map<Principal, List.List<ExerciseChange>>;
+    setConfigurations : Map.Map<Principal, Map.Map<Text, SetConfiguration>>;
   };
 
   public func run(old : OldActor) : NewActor {
-    {
-      userProfiles = old.userProfiles;
-      workoutHistory = old.workoutHistory;
-      recoveryState = old.recoveryState;
-      exerciseChanges = old.exerciseChanges;
-      setConfigurations = old.setConfigurations;
-    };
+    old;
   };
 };

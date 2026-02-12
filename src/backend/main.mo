@@ -7,9 +7,10 @@ import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import Text "mo:core/Text";
-
 import AccessControl "authorization/access-control";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   type Gender = { #male; #female; #other };
   type WeightUnit = { #kg; #lb };
@@ -109,8 +110,6 @@ actor {
     totalVolume : Float;
     note : Text;
   };
-
-  let TEST_RECOVERY_MODE = true;
 
   let exerciseLibrary : [Exercise] = [
     { name = "Barbell Squats"; primaryMuscleGroup = "Quads"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/barbell-squat"; recoveryTime = 72 },
@@ -260,10 +259,6 @@ actor {
   var setConfigurations : Map.Map<Principal, Map.Map<Text, SetConfiguration>> = Map.empty();
 
   func getExerciseCountForGroup(group : Text, recovery : RecoveryState) : Nat {
-    if (TEST_RECOVERY_MODE) {
-      if (group == "Core") { return 2 };
-      return 2;
-    };
     switch (group) {
       case ("Quads" or "Hamstrings" or "Glutes" or "Calves") {
         let recoveryPct = switch (group) {
@@ -396,13 +391,6 @@ actor {
     });
   };
 
-  public query ({ caller }) func isTestRecoveryModeEnabled() : async Bool {
-    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
-      Runtime.trap("Unauthorized: Only authenticated users can check recovery mode");
-    };
-    TEST_RECOVERY_MODE;
-  };
-
   public query ({ caller }) func debugGetExerciseCounts() : async [(Text, Nat)] {
     if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
       Runtime.trap("Unauthorized: Only admins can access debug functions");
@@ -495,22 +483,7 @@ actor {
     };
 
     let profile = switch (userProfiles.get(caller)) {
-      case (null) {
-        if (TEST_RECOVERY_MODE) {
-          let defaultProfile : UserProfile = {
-            gender = #male;
-            bodyweight = 65.0;
-            weightUnit = #kg;
-            trainingFrequency = #threeDays;
-            darkMode = false;
-            restTime = 60;
-            muscleGroupRestInterval = 72;
-          };
-          defaultProfile;
-        } else {
-          return #err(#userProfileNotFound("User profile not found"));
-        };
-      };
+      case (null) { return #err(#userProfileNotFound("User profile not found")) };
       case (?p) { p };
     };
 
@@ -578,22 +551,7 @@ actor {
     };
 
     let profile = switch (userProfiles.get(caller)) {
-      case (null) {
-        if (TEST_RECOVERY_MODE) {
-          let defaultProfile : UserProfile = {
-            gender = #male;
-            bodyweight = 65.0;
-            weightUnit = #kg;
-            trainingFrequency = #threeDays;
-            darkMode = false;
-            restTime = 60;
-            muscleGroupRestInterval = 72;
-          };
-          defaultProfile;
-        } else {
-          return #err(#userProfileNotFound("User profile not found"));
-        };
-      };
+      case (null) { return #err(#userProfileNotFound("User profile not found")) };
       case (?p) { p };
     };
 
@@ -776,23 +734,6 @@ actor {
   };
 
   func refreshAllRecoveryPercentages(existing : RecoveryState) : RecoveryState {
-    if (TEST_RECOVERY_MODE) {
-      let fullRecovery : MuscleRecovery = {
-        lastTrained = existing.chest.lastTrained;
-        recoveryPercentage = 100.0;
-      };
-      return {
-        chest = fullRecovery;
-        back = fullRecovery;
-        shoulders = fullRecovery;
-        arms = fullRecovery;
-        core = fullRecovery;
-        quadsRecovery = fullRecovery;
-        hamstringsRecovery = fullRecovery;
-        glutesRecovery = fullRecovery;
-        calvesRecovery = fullRecovery;
-      };
-    };
     {
       chest = { existing.chest with recoveryPercentage = calculateRecoveryPercentage(existing.chest.lastTrained, 72) };
       back = { existing.back with recoveryPercentage = calculateRecoveryPercentage(existing.back.lastTrained, 72) };

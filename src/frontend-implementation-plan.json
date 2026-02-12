@@ -1,20 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Trigger draft v350+ deployment after backend filter fix",
+  "title": "Remove frontend test-recovery-mode UI and query hook",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Trigger and document a new draft build/deploy with version >= 350 after the backend filter fix is applied.",
+      "id": "REQ-3",
+      "summary": "Remove the frontend Test Mode indicator and the React Query hook that checks test recovery mode status.",
       "acceptanceCriteria": [
-        "A new draft is built and deployed with a version number >= 350.",
-        "Deployed draft can be used to test generating a Full Body workout end-to-end from the UI."
+        "frontend/src/hooks/useQueries.ts no longer exports useIsTestRecoveryModeEnabled (or any equivalent hook) and no longer queries ['testRecoveryMode'].",
+        "frontend/src/components/Header.tsx no longer imports or calls useIsTestRecoveryModeEnabled, and the 'Test Mode' Badge is no longer rendered.",
+        "The frontend builds successfully with no TypeScript errors related to removed test-mode APIs/hooks."
       ],
       "file_operations": [
         {
-          "path": "frontend/DEPLOY_RETRY.md",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Append a new retry entry (e.g., Retry Attempt #4) explicitly noting the draft version target (>= 350) to trigger a new build/deploy cycle without changing runtime behavior."
+          "description": "Remove the test-recovery-mode React Query hook (useIsTestRecoveryModeEnabled) and its associated queryKey usage ('testRecoveryMode'), including any references to a backend function for test mode status."
+        },
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Remove the import and usage of useIsTestRecoveryModeEnabled and delete the conditional 'Test Mode' badge rendering from the header UI, keeping the rest of the header functionality intact."
         }
       ]
     }

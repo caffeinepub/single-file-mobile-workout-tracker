@@ -5,13 +5,12 @@ import {
   useGenerateFullBodyWorkout, 
   useGenerateUpperBodyWorkout, 
   useGenerateLowerBodyWorkout,
-  useIsTestRecoveryModeEnabled,
   WorkoutType 
 } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, RefreshCw, ExternalLink, Loader2, AlertCircle, FlaskConical } from 'lucide-react';
+import { ArrowLeft, Play, RefreshCw, ExternalLink, Loader2, AlertCircle } from 'lucide-react';
 import ExerciseChangeModal from '../components/ExerciseChangeModal';
 import { toast } from 'sonner';
 import { buildOrderedSections, WorkoutSection } from '../lib/workoutPreviewSections';
@@ -40,7 +39,6 @@ export default function WorkoutPreviewPage({
   const generateFullBody = useGenerateFullBodyWorkout();
   const generateUpperBody = useGenerateUpperBodyWorkout();
   const generateLowerBody = useGenerateLowerBodyWorkout();
-  const { data: isTestMode = false } = useIsTestRecoveryModeEnabled();
 
   // Minimal validation - only check for duplicates and basic structure
   useEffect(() => {
@@ -283,15 +281,7 @@ export default function WorkoutPreviewPage({
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold">{getWorkoutTitle()}</h1>
-                  {isTestMode && (
-                    <Badge variant="outline" className="text-xs border-primary/50 text-primary">
-                      <FlaskConical className="h-3 w-3 mr-1" />
-                      Test
-                    </Badge>
-                  )}
-                </div>
+                <h1 className="text-xl font-bold">{getWorkoutTitle()}</h1>
                 <p className="text-xs text-muted-foreground">
                   {workout.length} exercises • ~{estimatedDuration()} min
                 </p>

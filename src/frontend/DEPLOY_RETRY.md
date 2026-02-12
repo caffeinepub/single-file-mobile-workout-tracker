@@ -15,3 +15,7 @@ Triggering new draft build to validate backend filter syntax fix. The backend fi
 
 ### 2026-02-11 - Retry Attempt #4 (Version 350+)
 **CRITICAL FILTER FIX**: Replaced invalid `e.primaryMuscleGroup.toLower()` syntax with correct Motoko filter block using `Text.toLowercase()` and `Text.equal()` in buildShuffledSectionFromArray. This fixes the compilation error preventing proper muscle group filtering across all workout generation functions (Full Body, Lower Body). Target: Draft Version 350 or higher.
+
+### 2026-02-12 - Retry Attempt #5 (Version 350+)
+**FORCE FIX DEPLOYMENT**: Applying the correct Motoko filter syntax fix to buildShuffledSectionFromArray. The filter block now uses `Text.toLowercase(e.primaryMuscleGroup)` and `Text.toLowercase(group)` with `Text.equal()` comparison instead of the invalid `.toLower()` method calls. This resolves the critical bug where only Core exercises were appearing in all workout types (Full Body, Upper Body, Lower Body). With TEST_RECOVERY_MODE = true, all muscle groups (Chest, Back, Shoulders, Arms, Quads, Hamstrings, Glutes, Calves, Core) should now properly return 2 exercises each. Target: Draft Version 350 or higher.
+

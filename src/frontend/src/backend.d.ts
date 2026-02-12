@@ -151,6 +151,5 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<Result_1>;
     initializeAccessControl(): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
-    isTestRecoveryModeEnabled(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<Result>;
 }
