@@ -6,12 +6,12 @@ export interface WorkoutSection {
   subsections?: WorkoutSection[];
 }
 
-const REQUIRED_ORDER = ['Chest', 'Back', 'Arms', 'Legs', 'Core'];
+const REQUIRED_ORDER = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'];
 const LEG_SUBGROUPS = ['Quads', 'Hamstrings', 'Glutes', 'Calves'];
 
 /**
  * Builds ordered workout sections from a flat exercise list.
- * Enforces the order: Chest → Back → Arms → Legs → Core
+ * Enforces the order: Chest → Back → Shoulders → Arms → Legs → Core
  * Legs section contains Quads/Hamstrings/Glutes/Calves as subsections.
  * Any unexpected groups are appended after Core in alphabetical order.
  */

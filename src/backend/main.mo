@@ -572,6 +572,143 @@ actor {
     });
   };
 
+  public shared ({ caller }) func generateFullBodyWorkout() : async Result<WorkoutWithNote> {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      return #err(#unauthorized("Only authenticated users can generate workouts"));
+    };
+
+    let profile = switch (userProfiles.get(caller)) {
+      case (null) {
+        if (TEST_RECOVERY_MODE) {
+          let defaultProfile : UserProfile = {
+            gender = #male;
+            bodyweight = 65.0;
+            weightUnit = #kg;
+            trainingFrequency = #threeDays;
+            darkMode = false;
+            restTime = 60;
+            muscleGroupRestInterval = 72;
+          };
+          defaultProfile;
+        } else {
+          return #err(#userProfileNotFound("User profile not found"));
+        };
+      };
+      case (?p) { p };
+    };
+
+    let currentRecovery = switch (recoveryState.get(caller)) {
+      case (null) { getDefaultRecoveryState() };
+      case (?r) { refreshAllRecoveryPercentages(r) };
+    };
+
+    let quadsRequestedCount = getExerciseCountForGroup("Quads", currentRecovery);
+    let hamstringsRequestedCount = getExerciseCountForGroup("Hamstrings", currentRecovery);
+    let glutesRequestedCount = getExerciseCountForGroup("Glutes", currentRecovery);
+    let calvesRequestedCount = getExerciseCountForGroup("Calves", currentRecovery);
+    let coreRequestedCount = getExerciseCountForGroup("Core", currentRecovery);
+    let chestRequestedCount = if (calculateRecoveryPercentage(currentRecovery.chest.lastTrained, 72) >= 65.0) { 2 } else { 0 };
+    let backRequestedCount = if (calculateRecoveryPercentage(currentRecovery.back.lastTrained, 72) >= 65.0) { 2 } else { 0 };
+    let shouldersRequestedCount = if (calculateRecoveryPercentage(currentRecovery.shoulders.lastTrained, 72) >= 65.0) { 2 } else { 0 };
+    let armsRequestedCount = if (calculateRecoveryPercentage(currentRecovery.arms.lastTrained, 72) >= 65.0) { 2 } else { 0 };
+
+    func buildShuffledSectionFromArrayWithLimit(
+      caller : Principal,
+      profile : UserProfile,
+      exercises : [Exercise],
+      group : Text,
+      groupLimit : Nat,
+      requestedCount : Nat,
+    ) : [WorkoutExercise] {
+      if (requestedCount == 0) { return [] };
+      let groupExercises = exercises.filter(func(e) {
+        Text.equal(
+          e.primaryMuscleGroup.toLower(),
+          group.toLower()
+        )
+      });
+      let shuffledGroup = shuffleArray(groupExercises, caller);
+      let count = Nat.min(shuffledGroup.size(), groupLimit);
+      let selected = if (shuffledGroup.size() > count) {
+        Array.tabulate(count, func(i) { shuffledGroup[i] });
+      } else { shuffledGroup };
+      let mapped = selected.map(
+        func(e) {
+          let (sets, reps) = calculateSetsAndReps(profile);
+          let suggestedWeight = calculateSuggestedWeight(e, profile);
+          {
+            exercise = e;
+            sets;
+            reps;
+            suggestedWeight;
+            setData = [];
+          };
+        }
+      );
+      mapped;
+    };
+
+    let quadsSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Quads", quadsRequestedCount, quadsRequestedCount
+    );
+    let hamstringsSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Hamstrings", hamstringsRequestedCount, hamstringsRequestedCount
+    );
+    let glutesSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Glutes", glutesRequestedCount, glutesRequestedCount
+    );
+    let calvesSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Calves", calvesRequestedCount, calvesRequestedCount
+    );
+    let coreSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Core", coreRequestedCount, coreRequestedCount
+    );
+    let chestSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Chest", chestRequestedCount, chestRequestedCount
+    );
+    let backSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Back", backRequestedCount, backRequestedCount
+    );
+    let shouldersSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Shoulders", shouldersRequestedCount, shouldersRequestedCount
+    );
+    let armsSection = buildShuffledSectionFromArrayWithLimit(
+      caller, profile, exerciseLibrary, "Arms", armsRequestedCount, armsRequestedCount
+    );
+
+    var allExercises : [WorkoutExercise] = [];
+    allExercises := allExercises.concat(quadsSection)
+      .concat(hamstringsSection)
+      .concat(glutesSection)
+      .concat(calvesSection)
+      .concat(coreSection)
+      .concat(chestSection)
+      .concat(backSection)
+      .concat(shouldersSection)
+      .concat(armsSection);
+
+    let finalExercises = uniqueByName(allExercises);
+    let cappedExercises = if (finalExercises.size() > 10) {
+      Array.tabulate(10, func(i) { finalExercises[i] });
+    } else { finalExercises };
+    let totalVolume = cappedExercises.foldLeft(
+      0.0,
+      func(acc, we) { acc + (toF(we.sets) * toF(we.reps) * we.suggestedWeight) },
+    );
+    #ok({
+      exercises = cappedExercises;
+      timestamp = 0;
+      totalVolume;
+      note = if (cappedExercises.size() == 0) {
+        "All muscle groups recovering";
+      } else if (cappedExercises.size() <= 3) {
+        "Limited exercises due to muscle recovery";
+      } else {
+        "Full body workout";
+      };
+    });
+  };
+
   func principalHash(p : Principal) : Nat {
     let blob = p.toBlob();
     var hash : Nat = 0;

@@ -94,6 +94,7 @@ export interface WorkoutWithNote {
 export interface _SERVICE {
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'debugGetExerciseCounts' : ActorMethod<[], Array<[string, bigint]>>,
+  'generateFullBodyWorkout' : ActorMethod<[], Result_4>,
   'generateLowerBodyWorkout' : ActorMethod<[], Result_4>,
   'getCallerUserProfile' : ActorMethod<[], Result_1>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,

@@ -1,68 +1,58 @@
 {
   "kind": "build_request",
-  "title": "Fix Motoko Text lowercase filter so workouts include correct muscle groups",
+  "title": "Fix Motoko filter syntax in buildShuffledSectionFromArray (draft 350 rebuild)",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-2",
-      "text": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the entire existing `let groupExercises = exercises.filter(...)` block (currently using invalid Motoko dot-syntax like `e.primaryMuscleGroup.toLower()` / `group.toLower()`) with the following exact Motoko code, using the already-imported Text module:\n\n```motoko\n    let groupExercises = exercises.filter(func(e) {\n      Text.equal(\n        Text.toLowercase(e.primaryMuscleGroup),\n        Text.toLowercase(group)\n      )\n    });\n```\n\nKeep all other logic exactly as-is, including any `Debug.print` statements and `TEST_RECOVERY_MODE = true`.",
+      "id": "REQ-1",
+      "text": "In backend/main.mo, update the filter inside buildShuffledSectionFromArray to remove the invalid Motoko method call e.primaryMuscleGroup.toLower() and replace the filter with exactly the following block:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all existing Debug.print statements and all other logic in buildShuffledSectionFromArray unchanged.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "The Fix: Replace the entire let groupExercises filter block (Lines 117-122) with this exact code:\n\nMotoko\n    let groupExercises = exercises.filter(func(e) {\n      Text.equal(\n        Text.toLowercase(e.primaryMuscleGroup),\n        Text.toLowercase(group)\n      )\n    });\n\nRequirement: Use the Text module already imported at Line 9. Keep all other logic and TEST_RECOVERY_MODE = true exactly as they are."
+          "The filter in buildShuffledSectionFromArray is invalid: e.primaryMuscleGroup.toLower() is not valid Motoko.\n\nReplace the filter with this exact block:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all Debug.print statements and other logic unchanged."
         ]
       },
       "acceptanceCriteria": [
-        "backend/main.mo compiles successfully with no usage of invalid `TextValue.toLower()` / dot-lowercase syntax in buildShuffledSectionFromArray.",
-        "The only change inside buildShuffledSectionFromArray is replacing the `groupExercises` filter block with the exact code provided (no additional logic changes).",
-        "`TEST_RECOVERY_MODE` remains set to `true` and is unchanged.",
-        "Any existing debug print statements remain unchanged."
+        "Project compiles successfully with the updated Motoko filter syntax (no usage of .toLower() on Text values).",
+        "buildShuffledSectionFromArray uses Text.toLowercase and Text.equal exactly as provided for muscle-group matching.",
+        "All pre-existing Debug.print statements in buildShuffledSectionFromArray remain present and unchanged.",
+        "Generating a Full Body workout yields non-empty exercise selections across expected muscle groups (not only Core), assuming exercises exist in the library for those groups."
       ]
     },
     {
-      "id": "REQ-3",
-      "text": "Trigger a new successful draft build after applying the backend change so the updated backend can be tested (e.g., generating a \"Lower Body\" workout should no longer return only Core exercises).",
+      "id": "REQ-2",
+      "text": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
       "target": "both",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Action: Apply this change to the backend and start a new build immediately."
+          "Apply this change to the project and build a new draft (Version 350) NOW."
         ]
       },
       "acceptanceCriteria": [
-        "A new draft build completes successfully with the backend filter fix included.",
-        "After the build, generating a \"Lower Body\" workout returns a variety of leg exercises (not only Core exercises)."
+        "A new draft is built and deployed with a version number >= 350.",
+        "Deployed draft can be used to test generating a Full Body workout end-to-end from the UI."
       ]
     }
   ],
   "constraints": [
-    "Do not modify `TEST_RECOVERY_MODE` (must remain `true`).",
-    "Use the existing `import Text \"mo:core/Text\";` already present in backend/main.mo (do not add a new Text import).",
-    "Do not remove or alter any existing Debug.print statements or other logic outside the specified filter block replacement.",
-    "Backend must remain a single-actor Motoko canister (no additional backend services)."
+    "Do not change any logic in buildShuffledSectionFromArray other than replacing the invalid filter with the exact block provided by the user.",
+    "Do not remove or modify any existing Debug.print statements.",
+    "Respect the existing single-actor Motoko backend architecture (all logic remains in backend/main.mo).",
+    "Do not modify files under frontend immutablePaths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui)."
   ],
   "nonGoals": [
-    "No frontend UI/UX changes.",
-    "No changes to the exercise library contents beyond what is required to fix the filter comparison.",
-    "No new workout generation features or algorithm redesign beyond correcting the lowercase/equality comparison."
+    "No UI/UX redesign or new frontend features.",
+    "No changes to workout section ordering logic beyond what is necessary for the filter fix.",
+    "No schema/state migrations unless strictly required by compilation (not expected for this change)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

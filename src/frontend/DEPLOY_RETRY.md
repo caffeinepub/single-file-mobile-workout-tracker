@@ -12,3 +12,6 @@ Backend leg-filter fix applied: replaced custom toLower with native Text.toLower
 
 ### 2026-02-10 - Retry Attempt #3
 Triggering new draft build to validate backend filter syntax fix. The backend filter in buildShuffledSectionFromArray now uses correct Motoko syntax: Text.toLowercase() instead of invalid .toLower() method. This should resolve the issue where all workout types were returning only Core exercises instead of properly filtering Legs (Quads/Hamstrings/Glutes/Calves), Chest, Back, Shoulders, and Arms exercises.
+
+### 2026-02-11 - Retry Attempt #4 (Version 350+)
+**CRITICAL FILTER FIX**: Replaced invalid `e.primaryMuscleGroup.toLower()` syntax with correct Motoko filter block using `Text.toLowercase()` and `Text.equal()` in buildShuffledSectionFromArray. This fixes the compilation error preventing proper muscle group filtering across all workout generation functions (Full Body, Lower Body). Target: Draft Version 350 or higher.

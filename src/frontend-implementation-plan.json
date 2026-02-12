@@ -1,20 +1,20 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Trigger a new draft build after backend lowercase filter fix",
+  "title": "Trigger draft v350+ deployment after backend filter fix",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Trigger a new successful draft build so the updated backend filter behavior can be tested.",
+      "id": "REQ-2",
+      "summary": "Trigger and document a new draft build/deploy with version >= 350 after the backend filter fix is applied.",
       "acceptanceCriteria": [
-        "A new draft build completes successfully with the backend filter fix included.",
-        "After the build, generating a \"Lower Body\" workout returns a variety of leg exercises (not only Core exercises)."
+        "A new draft is built and deployed with a version number >= 350.",
+        "Deployed draft can be used to test generating a Full Body workout end-to-end from the UI."
       ],
       "file_operations": [
         {
           "path": "frontend/DEPLOY_RETRY.md",
           "operation": "modify",
-          "description": "Append a new dated retry entry (next attempt number) indicating this change is intended to trigger a fresh draft build for validating the backend filter fix, without changing runtime behavior or UI."
+          "description": "Append a new retry entry (e.g., Retry Attempt #4) explicitly noting the draft version target (>= 350) to trigger a new build/deploy cycle without changing runtime behavior."
         }
       ]
     }

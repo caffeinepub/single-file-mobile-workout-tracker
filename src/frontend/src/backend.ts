@@ -224,6 +224,7 @@ export enum WeightUnit {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     debugGetExerciseCounts(): Promise<Array<[string, bigint]>>;
+    generateFullBodyWorkout(): Promise<Result_4>;
     generateLowerBodyWorkout(): Promise<Result_4>;
     getCallerUserProfile(): Promise<Result_1>;
     getCallerUserRole(): Promise<UserRole>;
@@ -264,6 +265,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.debugGetExerciseCounts();
             return result;
+        }
+    }
+    async generateFullBodyWorkout(): Promise<Result_4> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.generateFullBodyWorkout();
+                return from_candid_Result_4_n3(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.generateFullBodyWorkout();
+            return from_candid_Result_4_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async generateLowerBodyWorkout(): Promise<Result_4> {

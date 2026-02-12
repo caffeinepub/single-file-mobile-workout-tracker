@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-trigger-a-new-successful-draft-build-after-applying-the-backend-change-so-the-updated-backend-can-be-tested-e-g-generating-a-lower-body-workout-should-no-longer-return-only-core-exercises",
-      "featureTitle": "Trigger a new successful draft build after applying the backend change so the updated backend can be tested (e.g., generating a \"Lower Body\" workout should no longer return only Core exercises).",
+      "featureId": "feature-produce-and-deploy-a-new-draft-build-with-version-number-350-or-higher-after-applying-the-backend-filter-fix",
+      "featureTitle": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
       "files": [
         "frontend/DEPLOY_RETRY.md"
       ],
@@ -19,7 +19,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "confidence": "high"
     }

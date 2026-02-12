@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T17:46:40.112Z",
+  "generatedAt": "2026-02-11T20:30:02.595Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,15 +11,15 @@
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-2",
-        "summary": "In backend/main.mo, in the function buildShuffledSectionFromArray, replace the entire existing `let groupExercises = exercises.filter(...)` block (currently using invalid Motoko dot-syntax like `e.primaryMuscleGroup.toLower()` / `group.toLower()`) with the following exact Motoko code, using the already-imported Text module:\n\n```motoko\n    let groupExercises = exercises.filter(func(e) {\n      Text.equal(\n        Text.toLowercase(e.primaryMuscleGroup),\n        Text.toLowercase(group)\n      )\n    });\n```\n\nKeep all other logic exactly as-is, including any `Debug.print` statements and `TEST_RECOVERY_MODE = true`.",
+        "id": "REQ-1",
+        "summary": "In backend/main.mo, update the filter inside buildShuffledSectionFromArray to remove the invalid Motoko method call e.primaryMuscleGroup.toLower() and replace the filter with exactly the following block:\n\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n\nKeep all existing Debug.print statements and all other logic in buildShuffledSectionFromArray unchanged.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-3",
-        "summary": "Trigger a new successful draft build after applying the backend change so the updated backend can be tested (e.g., generating a \"Lower Body\" workout should no longer return only Core exercises).",
+        "id": "REQ-2",
+        "summary": "Produce and deploy a new draft build with version number 350 or higher after applying the backend filter fix.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/DEPLOY_RETRY.md"
@@ -33,6 +33,7 @@
   "changedFiles": [
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/DEPLOY_RETRY.md",
     "project_state.json",

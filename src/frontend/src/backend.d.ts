@@ -142,6 +142,7 @@ export enum WeightUnit {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     debugGetExerciseCounts(): Promise<Array<[string, bigint]>>;
+    generateFullBodyWorkout(): Promise<Result_4>;
     generateLowerBodyWorkout(): Promise<Result_4>;
     getCallerUserProfile(): Promise<Result_1>;
     getCallerUserRole(): Promise<UserRole>;
