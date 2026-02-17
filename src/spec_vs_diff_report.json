@@ -1,77 +1,38 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T00:23:49.960Z",
-  "summary": "The diff evidence is insufficient to confirm the required backend code changes inside backend/main.mo (filter fixes in both shuffle builders, test-mode recovery forcing, and timestamp updates). Additionally, the Time import shown does not match the required mo:base/Time. Several non-requested meta/documentation/state files were also modified.",
+  "generatedAt": "2026-02-17T19:23:23.402Z",
+  "summary": "Diff does not provide evidence that REQ-1 (replace adjustRecoveryForTestMode) or REQ-2 (add five Debug.print lines in generateFullBodyWorkout) were implemented in backend/main.mo. Additionally, an extra file (project_state.json) was modified, which violates the constraint to keep changes confined to backend/main.mo.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "In backend/main.mo, replace all invalid `.toLower()` usages on Text and ensure both `buildShuffledSectionFromArray` and `buildShuffledSectionFromArrayWithLimit` use `Text.equal(Text.toLowercase(...), Text.toLowercase(...))` for case-insensitive filtering.",
-      "reason": "backend/main.mo is truncated and does not show the implementations of `buildShuffledSectionFromArray` or `buildShuffledSectionFromArrayWithLimit`, nor does it show removal of `.toLower()` usages. The diff summary does not provide direct code evidence that these specific filter blocks were updated.",
+      "id": "REQ-1",
+      "requirement": "In backend/main.mo, replace the entire implementation of adjustRecoveryForTestMode(_caller : Principal) : RecoveryState with the exact provided code block (including fullyRecoveredTime = 0 - (100 * 3_600_000_000_000); and recoveryPercentage = 100.0 for chest/back/shoulders/arms/core/quadsRecovery/hamstringsRecovery/glutesRecovery/calvesRecovery).",
+      "reason": "The provided diff excerpt of backend/main.mo is truncated and does not include adjustRecoveryForTestMode, so there is no evidence the function body was replaced as required.",
       "evidence": [
         "backend/main.mo (truncated)"
       ]
     },
     {
-      "id": "REQ-5",
-      "requirement": "In backend/main.mo, update `adjustRecoveryForTestMode` to force 100% recovery for every muscle group by setting `lastTrained` to `0 - (100 * 3_600_000_000_000)` and `recoveryPercentage = 100.0` for each RecoveryState field.",
-      "reason": "backend/main.mo is truncated and does not include `adjustRecoveryForTestMode`, so the required assignments for all muscle groups are not verifiable from the provided diff summary.",
+      "id": "REQ-2",
+      "requirement": "In backend/main.mo, inside generateFullBodyWorkout, add exactly five specified Debug.print(...) statements to log requested exercise counts for Chest, Quads, Hamstrings, Glutes, and Calves using getExerciseCountForGroup(\"<Group>\", currentRecovery).toText().",
+      "reason": "The provided diff excerpt of backend/main.mo is truncated and does not include generateFullBodyWorkout or any of the required Debug.print lines, so there is no evidence the logging was added.",
       "evidence": [
         "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "In backend/main.mo, import `Time` from `mo:base/Time` and set `timestamp = Time.now()` (instead of 0) in `generateFullBodyWorkout`, `generateUpperBodyWorkout`, and `generateLowerBodyWorkout`.",
-      "reason": "The shown import is `import Time \"mo:core/Time\";`, not `mo:base/Time` as required. Also, the generator functions and their `timestamp` assignments are not visible in the truncated backend/main.mo diff, so replacement of `timestamp = 0` with `Time.now()` cannot be confirmed.",
-      "evidence": [
-        "backend/main.mo (truncated) — shows `import Time \"mo:core/Time\";`"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Build and deploy updated draft Version 359 and ensure the final user-visible deployment response contains exactly the two specified confirmation lines.",
-      "reason": "The diff summary contains file changes but provides no build/deploy output or final user-visible deployment response text, so this requirement cannot be validated from the diff evidence.",
-      "evidence": [
-        "File diff summary (no build/deploy output or final response text shown)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Imported Time from `mo:core/Time` instead of the requested `mo:base/Time`.",
-      "reason": "REQ-6 explicitly requires `import Time \"mo:base/Time\";`. The diff shows a different module path.",
+      "description": "Modified project_state.json (project metadata/state) despite requirement/constraint to keep all changes confined to backend/main.mo and avoid schema/state changes.",
+      "reason": "BuildRequest explicitly constrains changes to backend/main.mo only; project_state.json was modified and includes new/altered summaries and feature request entries not part of the two specified backend changes.",
       "evidence": [
-        "backend/main.mo (truncated) — `import Time \"mo:core/Time\";`"
-      ]
-    },
-    {
-      "description": "Modified/added deployment retry log documentation file.",
-      "reason": "The BuildRequest does not request adding or updating deployment retry documentation; it focuses on backend/main.mo logic fixes and a deploy outcome.",
-      "evidence": [
-        "frontend/DEPLOY_RETRY.md (truncated)"
-      ]
-    },
-    {
-      "description": "Modified a frontend summaries/meta file describing extensive frontend behavior and styling.",
-      "reason": "No requirement asks to update a file that summarizes frontend behavior/styling; also the BuildRequest constraints emphasize avoiding frontend changes in certain immutable paths, and these summary changes are not part of REQ-4–REQ-7.",
-      "evidence": [
-        "frontend-file-summaries.txt (truncated)"
-      ]
-    },
-    {
-      "description": "Modified project state tracking JSON with internal feature/request metadata.",
-      "reason": "The BuildRequest does not ask for updating internal project tracking/state files.",
-      "evidence": [
-        "project_state.json (truncated)"
+        "project_state.json"
       ]
     }
   ],
   "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
-    "frontend-file-summaries.txt",
-    "frontend/DEPLOY_RETRY.md",
     "project_state.json"
   ]
 }

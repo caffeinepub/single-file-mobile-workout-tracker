@@ -10,8 +10,7 @@ import Principal "mo:core/Principal";
 import Text "mo:core/Text";
 
 import AccessControl "authorization/access-control";
-
-// Migration for adding new exercise library
+import Debug "mo:core/Debug";
 
 actor {
   type Gender = { #male; #female; #other };
@@ -571,6 +570,12 @@ actor {
         case (?r) { refreshAllRecoveryPercentages(r) };
       };
     };
+
+    Debug.print("Chest: " # getExerciseCountForGroup("Chest", currentRecovery).toText());
+    Debug.print("Quads: " # getExerciseCountForGroup("Quads", currentRecovery).toText());
+    Debug.print("Hamstrings: " # getExerciseCountForGroup("Hamstrings", currentRecovery).toText());
+    Debug.print("Glutes: " # getExerciseCountForGroup("Glutes", currentRecovery).toText());
+    Debug.print("Calves: " # getExerciseCountForGroup("Calves", currentRecovery).toText());
 
     let chestSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Chest", 2

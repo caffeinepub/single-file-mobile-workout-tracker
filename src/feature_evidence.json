@@ -1,27 +1,4 @@
 {
   "kind": "feature_evidence_report",
-  "features": [
-    {
-      "featureId": "feature-build-and-deploy-the-updated-draft-version-359-after-applying-req-4-through-req-6-and-ensure-the-final-user-visible-deployment-response-contains-exactly-the-two-confirmation-lines-specified-by-the-user-prompt",
-      "featureTitle": "Build and deploy the updated draft Version 359 after applying REQ-4 through REQ-6, and ensure the final user-visible deployment response contains exactly the two confirmation lines specified by the user prompt.",
-      "files": [
-        "frontend/DEPLOY_RETRY.md"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "qr-code@1.0.0",
-        "camera@1.0.0",
-        "http-outcalls@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-7"
-      ],
-      "confidence": "high"
-    }
-  ]
+  "features": []
 }

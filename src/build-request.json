@@ -1,98 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Rebuild Version 359: fix Motoko text filtering, test-mode recovery, and real timestamps",
+  "title": "Force 100% test-mode recovery for leg subgroups and add Full Body requested-count debug logs (Version 360)",
   "projectName": "Workout Generator",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-4",
-      "text": "In backend/main.mo, replace all invalid Motoko usages of `.toLower()` on Text with the correct Motoko Text module logic, focusing on workout generation filtering. Specifically, ensure that the filter blocks in both `buildShuffledSectionFromArray` and `buildShuffledSectionFromArrayWithLimit` use `Text.equal(Text.toLowercase(...), Text.toLowercase(...))` so leg subgroups (Quads, Hamstrings, Glutes, Calves) and all other muscle groups match case-insensitively.",
+      "id": "REQ-1",
+      "text": "In backend/main.mo, replace the entire implementation of `adjustRecoveryForTestMode(_caller : Principal) : RecoveryState` with the exact code block provided by the user, including `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` and setting `recoveryPercentage = 100.0` for chest, back, shoulders, arms, core, quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-2"
+          "msg-1"
         ],
         "quotes": [
-          "1. FIX INVALID FILTER SYNTAX (MANDATORY) ... Use Text.toLowercase() instead of .toLower(). Use Text.equal() to compare the two lowercased strings.",
-          "Search the entire file for all instances of .toLower()."
+          "Replace adjustRecoveryForTestMode with:\n\nfunc adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {\n  let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);\n  {\n    chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n  };\n}"
         ]
       },
       "acceptanceCriteria": [
-        "Project compiles successfully in Motoko with no `.toLower()` calls remaining on Text values.",
-        "`buildShuffledSectionFromArray` uses a case-insensitive comparison implemented via `Text.toLowercase` and `Text.equal`.",
-        "`buildShuffledSectionFromArrayWithLimit` uses a case-insensitive comparison implemented via `Text.toLowercase` and `Text.equal`.",
-        "Generating a Full Body workout can return exercises for Quads, Hamstrings, Glutes, and Calves when recovery allows (i.e., filtering no longer returns zero due to invalid syntax)."
+        "When TEST_RECOVERY_MODE behavior is applied, the resulting RecoveryState has recoveryPercentage == 100.0 for quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery (as well as chest/back/shoulders/arms/core).",
+        "No other functions or logic in backend/main.mo are modified as part of this requirement (only the body of adjustRecoveryForTestMode is replaced)."
       ]
     },
     {
-      "id": "REQ-5",
-      "text": "In backend/main.mo, update `adjustRecoveryForTestMode` so that it forces 100% recovery for every muscle group (including quads/hamstrings/glutes/calves) by setting `lastTrained` to `0 - (100 * 3_600_000_000_000)` and `recoveryPercentage = 100.0` for each field in `RecoveryState`.",
+      "id": "REQ-2",
+      "text": "In backend/main.mo, inside `generateFullBodyWorkout`, add the provided `Debug.print(...)` statements after each relevant section so the canister logs output the requested exercise counts for Chest, Quads, Hamstrings, Glutes, and Calves using `getExerciseCountForGroup(\"<Group>\", currentRecovery).toText()` exactly as provided by the user.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1",
-          "msg-2"
+          "msg-1"
         ],
         "quotes": [
-          "2. FIX TEST MODE RECOVERY MATH (MANDATORY) ... let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000); { ... quadsRecovery ... hamstringsRecovery ... glutesRecovery ... calvesRecovery ... }"
+          "In generateFullBodyWorkout, add Debug.print after each section:\n\nDebug.print(\"Chest requested: \" # getExerciseCountForGroup(\"Chest\", currentRecovery).toText());\nDebug.print(\"Quads requested: \" # getExerciseCountForGroup(\"Quads\", currentRecovery).toText());\nDebug.print(\"Hamstrings requested: \" # getExerciseCountForGroup(\"Hamstrings\", currentRecovery).toText());\nDebug.print(\"Glutes requested: \" # getExerciseCountForGroup(\"Glutes\", currentRecovery).toText());\nDebug.print(\"Calves requested: \" # getExerciseCountForGroup(\"Calves\", currentRecovery).toText());"
         ]
       },
       "acceptanceCriteria": [
-        "When `TEST_RECOVERY_MODE` is enabled, recovery returned/used by workout generators results in leg subgroups (quads/hamstrings/glutes/calves) being treated as 100% recovered.",
-        "`adjustRecoveryForTestMode` sets `recoveryPercentage = 100.0` for chest, back, shoulders, arms, core, quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery.",
-        "`adjustRecoveryForTestMode` sets `lastTrained` for all those fields to `0 - (100 * 3_600_000_000_000)`."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "In backend/main.mo, enable real timestamps by importing the Motoko Time module (`import Time \"mo:base/Time\";`) and replacing `timestamp = 0` with `timestamp = Time.now()` in all workout generator functions: `generateFullBodyWorkout`, `generateUpperBodyWorkout`, and `generateLowerBodyWorkout`.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1",
-          "msg-2"
-        ],
-        "quotes": [
-          "3. ENABLE REAL-TIME TIMESTAMPS ... Add the Time module to your imports: import Time \"mo:base/Time\";. ... change timestamp = 0 to timestamp = Time.now() in all workout generator functions (generateFullBodyWorkout, generateUpperBodyWorkout, and generateLowerBodyWorkout)."
-        ]
-      },
-      "acceptanceCriteria": [
-        "backend/main.mo includes `import Time \"mo:base/Time\";`.",
-        "`generateFullBodyWorkout` returns `WorkoutWithNote` with `timestamp` set to `Time.now()` rather than `0`.",
-        "`generateUpperBodyWorkout` returns workouts with `timestamp` set to `Time.now()` rather than `0`.",
-        "`generateLowerBodyWorkout` returns workouts with `timestamp` set to `Time.now()` rather than `0`."
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Build and deploy the updated draft Version 359 after applying REQ-4 through REQ-6, and ensure the final user-visible deployment response contains exactly the two confirmation lines specified by the user prompt.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-1",
-          "msg-2"
-        ],
-        "quotes": [
-          "OUTPUT ONLY:\n\nConfirmation: \"Filter syntax, recovery math, and timestamps fixed – Version 359 built.\"\n\n\"Deployed – Test Full Body workout now.\""
-        ]
-      },
-      "acceptanceCriteria": [
-        "A successful draft build and deploy is completed for Version 359 with the backend changes applied.",
-        "The final deployment response text includes exactly these two lines (verbatim, including punctuation and dash):\n1. Filter syntax, recovery math, and timestamps fixed – Version 359 built.\n2. Deployed – Test Full Body workout now."
+        "Triggering Full Body workout generation results in canister debug logs containing the five lines with prefixes: \"Chest requested:\", \"Quads requested:\", \"Hamstrings requested:\", \"Glutes requested:\", and \"Calves requested:\".",
+        "The printed values reflect the output of `getExerciseCountForGroup` using the `currentRecovery` value used by `generateFullBodyWorkout` at runtime.",
+        "No additional logging beyond the five specified Debug.print lines is added."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor (all logic stays in backend/main.mo).",
-    "Do not edit frontend files in immutablePaths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
-    "Use English for any user-facing text.",
-    "Apply changes across the entire backend file where relevant; do not skip middle/bottom sections."
+    "Do nothing else beyond the two specified backend changes (1) replace adjustRecoveryForTestMode exactly as provided and (2) add only the specified Debug.print lines in generateFullBodyWorkout.",
+    "Keep all changes confined to backend/main.mo.",
+    "Do not introduce schema/state changes requiring backend/migration.mo."
   ],
   "nonGoals": [
-    "Do not add third-party authentication providers (only Internet Identity is supported).",
-    "Do not introduce external databases or non-Motoko backend services.",
-    "Do not add new workout features or change workout composition rules beyond the specified filter/recovery/timestamp fixes."
+    "Do not modify any muscle-group string normalization or filtering logic (e.g., Text.toLowercase/Text.equal changes) as part of this request.",
+    "Do not change workout timestamps, workout composition logic, exercise library contents, or frontend behavior.",
+    "Do not add new endpoints, admin tools, or UI changes."
   ],
   "imageRequirements": {
     "required": [],

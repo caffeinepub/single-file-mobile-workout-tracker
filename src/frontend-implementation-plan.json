@@ -1,22 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Workout Generator — Version 359 deploy confirmation alignment (frontend-only)",
-  "requirements": [
-    {
-      "id": "REQ-7",
-      "summary": "Align deploy/retry documentation so the required two-line Version 359 deployment confirmation text is unambiguous and matches the user-specified output exactly.",
-      "acceptanceCriteria": [
-        "A successful draft build and deploy is completed for Version 359 with the backend changes applied.",
-        "The final deployment response text includes exactly these two lines (verbatim, including punctuation and dash):\n1. Filter syntax, recovery math, and timestamps fixed – Version 359 built.\n2. Deployed – Test Full Body workout now."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/DEPLOY_RETRY.md",
-          "operation": "modify",
-          "description": "Update the Version 359 entry so the documented 'Deployment Status Message' contains exactly the two required confirmation lines from the BuildRequest (remove the current extra line), and add a brief note that the final deployment response must be those two lines verbatim."
-        }
-      ]
-    }
-  ]
+  "title": "Workout Generator — Frontend-only plan (no changes required for backend-only request)",
+  "requirements": []
 }

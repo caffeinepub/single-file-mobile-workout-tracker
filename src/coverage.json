@@ -1,46 +1,28 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T00:23:49.963Z",
+  "generatedAt": "2026-02-17T19:23:23.405Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 1,
+    "total": 2,
+    "implemented": 0,
     "items": [
       {
-        "id": "REQ-4",
-        "summary": "In backend/main.mo, replace all invalid Motoko usages of `.toLower()` on Text with the correct Motoko Text module logic, focusing on workout generation filtering. Specifically, ensure that the filter blocks in both `buildShuffledSectionFromArray` and `buildShuffledSectionFromArrayWithLimit` use `Text.equal(Text.toLowercase(...), Text.toLowercase(...))` so leg subgroups (Quads, Hamstrings, Glutes, Calves) and all other muscle groups match case-insensitively.",
+        "id": "REQ-1",
+        "summary": "In backend/main.mo, replace the entire implementation of `adjustRecoveryForTestMode(_caller : Principal) : RecoveryState` with the exact code block provided by the user, including `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` and setting `recoveryPercentage = 100.0` for chest, back, shoulders, arms, core, quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-5",
-        "summary": "In backend/main.mo, update `adjustRecoveryForTestMode` so that it forces 100% recovery for every muscle group (including quads/hamstrings/glutes/calves) by setting `lastTrained` to `0 - (100 * 3_600_000_000_000)` and `recoveryPercentage = 100.0` for each field in `RecoveryState`.",
+        "id": "REQ-2",
+        "summary": "In backend/main.mo, inside `generateFullBodyWorkout`, add the provided `Debug.print(...)` statements after each relevant section so the canister logs output the requested exercise counts for Chest, Quads, Hamstrings, Glutes, and Calves using `getExerciseCountForGroup(\"<Group>\", currentRecovery).toText()` exactly as provided by the user.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
-      },
-      {
-        "id": "REQ-6",
-        "summary": "In backend/main.mo, enable real timestamps by importing the Motoko Time module (`import Time \"mo:base/Time\";`) and replacing `timestamp = 0` with `timestamp = Time.now()` in all workout generator functions: `generateFullBodyWorkout`, `generateUpperBodyWorkout`, and `generateLowerBodyWorkout`.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Build and deploy the updated draft Version 359 after applying REQ-4 through REQ-6, and ensure the final user-visible deployment response contains exactly the two confirmation lines specified by the user prompt.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/DEPLOY_RETRY.md"
-        ],
-        "matchedFiles": [
-          "frontend/DEPLOY_RETRY.md"
-        ]
       }
     ]
   },
@@ -48,9 +30,11 @@
     "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/DEPLOY_RETRY.md",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
