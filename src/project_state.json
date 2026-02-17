@@ -1,18 +1,31 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 3,
-  "summary": "New project",
-  "architectural_notes": [],
-  "known_issues": [
-    "Automated build/update attempt to remove TEST_RECOVERY logic failed (implementation did not go through)"
+  "projectStateVersion": 7,
+  "summary": "Scope expanded from a minimal one-line Motoko filter fix to a broader backend repair and rebuild request: replace all invalid `.toLower()` usages (including in both buildShuffledSectionFromArray* functions) with `Text.toLowercase` comparisons, fix test-mode recovery math in `adjustRecoveryForTestMode` to force 100% recovery via an old `lastTrained` timestamp, and enable real timestamps by importing `Time` and replacing `timestamp = 0` with `Time.now()` in workout generators; user now explicitly requests to run the build.",
+  "architectural_notes": [
+    "Process rule: for any specific instruction/code-change request, either complete the entire request exactly as written or respond ONLY: \"FAILED – unable to complete the full request exactly as written. No partial changes were made.\" No partial changes/builds."
   ],
-  "isFixRequest": false,
+  "known_issues": [
+    "Full Body workout generation missing legs (Quads/Hamstrings/Glutes/Calves) due to invalid Motoko filter syntax using .toLower() on Text.",
+    "Even when leg sections are called in generateFullBodyWorkout, legs can remain absent if filter code still uses invalid `.toLower()` (fix may not have landed in deployed canister).",
+    "Test recovery mode may be incorrectly gating exercises if `adjustRecoveryForTestMode` uses an incorrect `lastTrained` baseline (e.g., 0) instead of an old timestamp representing full recovery.",
+    "Workout generator responses may be using `timestamp = 0` instead of `Time.now()`, preventing real-time timestamps."
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-remove-the-frontend-test-mode-indicator-and-associated-query-hook-usage-that-checks-test-recovery-mode-status",
-      "title": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
+      "id": "feature-build-and-deploy-draft-version-359-after-applying-the-exact-one-block-replacement-record-build-output-so-the-final-user-visible-deployment-response-can-be-emitted-exactly-as-requested",
+      "title": "Build and deploy draft Version 359 after applying the exact one-block replacement. Record build output so the final user-visible deployment response can be emitted exactly as requested.",
       "reqIds": [
         "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-and-deploy-the-updated-draft-version-359-after-applying-req-4-through-req-6-and-ensure-the-final-user-visible-deployment-response-contains-exactly-the-two-confirmation-lines-specified-by-the-user-prompt",
+      "title": "Build and deploy the updated draft Version 359 after applying REQ-4 through REQ-6, and ensure the final user-visible deployment response contains exactly the two confirmation lines specified by the user prompt.",
+      "reqIds": [
+        "REQ-7"
       ],
       "version": 1
     }
@@ -20,13 +33,13 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Remove TEST_RECOVERY / TEST_RECOVERY_MODE logic completely from the Motoko backend",
+      "summary": "Fix leg-group filtering by replacing invalid .toLower() usage with Text.toLowercase(...) in buildShuffledSectionFromArrayWithLimit (exact minimal change) and rebuild draft Version 359",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Remove the TEST_RECOVERY_MODE flag and all TEST_RECOVERY/test-recovery logic from the Motoko backend, so workout generation always uses the normal recovery-based selection logic.",
+      "summary": "In backend/main.mo, inside the function buildShuffledSectionFromArrayWithLimit, replace ONLY the following filter comparison block:\n\nText.equal(\n  e.primaryMuscleGroup.toLower(),\n  group.toLower()\n)\n\nwith EXACTLY:\n\nText.equal(\n  Text.toLowercase(e.primaryMuscleGroup),\n  Text.toLowercase(group)\n)\n\nDo not modify any other code (no other functions, no logs, no timestamps, and no changes outside this function).",
       "reqIds": [
         "REQ-1"
       ],
@@ -34,14 +47,44 @@
     },
     {
       "id": "AR-3",
-      "summary": "Remove any backend API surface used to expose test recovery mode status (e.g., an isTestRecoveryModeEnabled query) and update the generated frontend/backend bindings accordingly.",
+      "summary": "In backend/main.mo, inside the function buildShuffledSectionFromArrayWithLimit, replace the exact line block:\n\nText.equal(\n  e.primaryMuscleGroup.toLower(),\n  group.toLower()\n)\n\nwith exactly:\n\nText.equal(\n  Text.toLowercase(e.primaryMuscleGroup),\n  Text.toLowercase(group)\n)\n\nDo not change anything else in backend/main.mo (no additional edits anywhere in the file). If the exact original block cannot be found and replaced exactly as specified, abort without making any changes.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Perform full 'repair generation engine' rebuild of Version 359: (1) search/replace invalid `.toLower()` usage across file; update filter logic in both buildShuffledSectionFromArray and buildShuffledSectionFromArrayWithLimit to use `Text.toLowercase` + `Text.equal`, (2) replace adjustRecoveryForTestMode body to set `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)` and set all muscle groups (incl. quads/hamstrings/glutes/calves) to 100% recovery, (3) add `import Time \"mo:base/Time\";` and change `timestamp = 0` to `timestamp = Time.now()` in generateFullBodyWorkout/UpperBody/LowerBody, then build/deploy (as requested) with no skipped sections.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "In backend/main.mo, replace all invalid Motoko usages of `.toLower()` on Text with the correct Motoko Text module logic, focusing on workout generation filtering. Specifically, ensure that the filter blocks in both `buildShuffledSectionFromArray` and `buildShuffledSectionFromArrayWithLimit` use `Text.equal(Text.toLowercase(...), Text.toLowercase(...))` so leg subgroups (Quads, Hamstrings, Glutes, Calves) and all other muscle groups match case-insensitively.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "In backend/main.mo, update `adjustRecoveryForTestMode` so that it forces 100% recovery for every muscle group (including quads/hamstrings/glutes/calves) by setting `lastTrained` to `0 - (100 * 3_600_000_000_000)` and `recoveryPercentage = 100.0` for each field in `RecoveryState`.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "In backend/main.mo, enable real timestamps by importing the Motoko Time module (`import Time \"mo:base/Time\";`) and replacing `timestamp = 0` with `timestamp = Time.now()` in all workout generator functions: `generateFullBodyWorkout`, `generateUpperBodyWorkout`, and `generateLowerBodyWorkout`.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
     }
   ],
-  "projectName": "Remove TEST_RECOVERY_MODE from backend and delete related frontend test-mode UI",
+  "projectName": "Motoko filter syntax fix in buildShuffledSectionFromArrayWithLimit (draft 359)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

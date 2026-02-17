@@ -1,77 +1,111 @@
 {
   "kind": "build_request",
-  "title": "Remove TEST_RECOVERY_MODE from backend and delete related frontend test-mode UI",
+  "title": "Rebuild Version 359: fix Motoko text filtering, test-mode recovery, and real timestamps",
+  "projectName": "Workout Generator",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Remove the TEST_RECOVERY_MODE flag and all TEST_RECOVERY/test-recovery logic from the Motoko backend, so workout generation always uses the normal recovery-based selection logic.",
+      "id": "REQ-4",
+      "text": "In backend/main.mo, replace all invalid Motoko usages of `.toLower()` on Text with the correct Motoko Text module logic, focusing on workout generation filtering. Specifically, ensure that the filter blocks in both `buildShuffledSectionFromArray` and `buildShuffledSectionFromArrayWithLimit` use `Text.equal(Text.toLowercase(...), Text.toLowercase(...))` so leg subgroups (Quads, Hamstrings, Glutes, Calves) and all other muscle groups match case-insensitively.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "recent-7",
-          "recent-9"
+          "msg-1",
+          "msg-2"
         ],
         "quotes": [
-          "remove TEST_RECOVERY completely",
-          "try again"
+          "1. FIX INVALID FILTER SYNTAX (MANDATORY) ... Use Text.toLowercase() instead of .toLower(). Use Text.equal() to compare the two lowercased strings.",
+          "Search the entire file for all instances of .toLower()."
         ]
       },
       "acceptanceCriteria": [
-        "backend/main.mo no longer defines TEST_RECOVERY_MODE (or any equivalent test recovery toggle).",
-        "Any conditional branches that force fixed exercise counts when TEST_RECOVERY_MODE is enabled are removed (e.g., the early return block in getExerciseCountForGroup).",
-        "The backend compiles successfully and workout generation returns muscle-group-appropriate exercises without relying on any test-mode shortcut logic."
+        "Project compiles successfully in Motoko with no `.toLower()` calls remaining on Text values.",
+        "`buildShuffledSectionFromArray` uses a case-insensitive comparison implemented via `Text.toLowercase` and `Text.equal`.",
+        "`buildShuffledSectionFromArrayWithLimit` uses a case-insensitive comparison implemented via `Text.toLowercase` and `Text.equal`.",
+        "Generating a Full Body workout can return exercises for Quads, Hamstrings, Glutes, and Calves when recovery allows (i.e., filtering no longer returns zero due to invalid syntax)."
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "Remove any backend API surface used to expose test recovery mode status (e.g., an isTestRecoveryModeEnabled query) and update the generated frontend/backend bindings accordingly.",
+      "id": "REQ-5",
+      "text": "In backend/main.mo, update `adjustRecoveryForTestMode` so that it forces 100% recovery for every muscle group (including quads/hamstrings/glutes/calves) by setting `lastTrained` to `0 - (100 * 3_600_000_000_000)` and `recoveryPercentage = 100.0` for each field in `RecoveryState`.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "recent-7"
+          "msg-1",
+          "msg-2"
         ],
         "quotes": [
-          "remove TEST_RECOVERY completely"
+          "2. FIX TEST MODE RECOVERY MATH (MANDATORY) ... let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000); { ... quadsRecovery ... hamstringsRecovery ... glutesRecovery ... calvesRecovery ... }"
         ]
       },
       "acceptanceCriteria": [
-        "If backend exposes a method such as isTestRecoveryModeEnabled(), it is removed from backend/main.mo.",
-        "Frontend generated backend typings/build output no longer includes the removed method.",
-        "No frontend code attempts to call a removed backend test-mode method at runtime."
+        "When `TEST_RECOVERY_MODE` is enabled, recovery returned/used by workout generators results in leg subgroups (quads/hamstrings/glutes/calves) being treated as 100% recovered.",
+        "`adjustRecoveryForTestMode` sets `recoveryPercentage = 100.0` for chest, back, shoulders, arms, core, quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery.",
+        "`adjustRecoveryForTestMode` sets `lastTrained` for all those fields to `0 - (100 * 3_600_000_000_000)`."
       ]
     },
     {
-      "id": "REQ-3",
-      "text": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
-      "target": "frontend",
+      "id": "REQ-6",
+      "text": "In backend/main.mo, enable real timestamps by importing the Motoko Time module (`import Time \"mo:base/Time\";`) and replacing `timestamp = 0` with `timestamp = Time.now()` in all workout generator functions: `generateFullBodyWorkout`, `generateUpperBodyWorkout`, and `generateLowerBodyWorkout`.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "recent-7"
+          "msg-1",
+          "msg-2"
         ],
         "quotes": [
-          "remove TEST_RECOVERY completely"
+          "3. ENABLE REAL-TIME TIMESTAMPS ... Add the Time module to your imports: import Time \"mo:base/Time\";. ... change timestamp = 0 to timestamp = Time.now() in all workout generator functions (generateFullBodyWorkout, generateUpperBodyWorkout, and generateLowerBodyWorkout)."
         ]
       },
       "acceptanceCriteria": [
-        "frontend/src/hooks/useQueries.ts no longer exports useIsTestRecoveryModeEnabled (or any equivalent hook) and no longer queries ['testRecoveryMode'].",
-        "frontend/src/components/Header.tsx no longer imports or calls useIsTestRecoveryModeEnabled, and the 'Test Mode' Badge is no longer rendered.",
-        "The frontend builds successfully with no TypeScript errors related to removed test-mode APIs/hooks."
+        "backend/main.mo includes `import Time \"mo:base/Time\";`.",
+        "`generateFullBodyWorkout` returns `WorkoutWithNote` with `timestamp` set to `Time.now()` rather than `0`.",
+        "`generateUpperBodyWorkout` returns workouts with `timestamp` set to `Time.now()` rather than `0`.",
+        "`generateLowerBodyWorkout` returns workouts with `timestamp` set to `Time.now()` rather than `0`."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Build and deploy the updated draft Version 359 after applying REQ-4 through REQ-6, and ensure the final user-visible deployment response contains exactly the two confirmation lines specified by the user prompt.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1",
+          "msg-2"
+        ],
+        "quotes": [
+          "OUTPUT ONLY:\n\nConfirmation: \"Filter syntax, recovery math, and timestamps fixed – Version 359 built.\"\n\n\"Deployed – Test Full Body workout now.\""
+        ]
+      },
+      "acceptanceCriteria": [
+        "A successful draft build and deploy is completed for Version 359 with the backend changes applied.",
+        "The final deployment response text includes exactly these two lines (verbatim, including punctuation and dash):\n1. Filter syntax, recovery math, and timestamps fixed – Version 359 built.\n2. Deployed – Test Full Body workout now."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko architecture (all logic in backend/main.mo).",
-    "Do not edit any files under frontend/src/components/ui or any paths listed in frontend immutablePaths (compose instead).",
-    "Use English for all user-facing text."
+    "Backend must remain a single Motoko actor (all logic stays in backend/main.mo).",
+    "Do not edit frontend files in immutablePaths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui.",
+    "Use English for any user-facing text.",
+    "Apply changes across the entire backend file where relevant; do not skip middle/bottom sections."
   ],
   "nonGoals": [
-    "Do not redesign the workout generation algorithm beyond removing the test recovery shortcut/toggle behavior.",
-    "Do not add new features or settings related to test mode or developer toggles.",
-    "Do not introduce new authentication methods beyond Internet Identity."
+    "Do not add third-party authentication providers (only Internet Identity is supported).",
+    "Do not introduce external databases or non-Motoko backend services.",
+    "Do not add new workout features or change workout composition rules beyond the specified filter/recovery/timestamp fixes."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

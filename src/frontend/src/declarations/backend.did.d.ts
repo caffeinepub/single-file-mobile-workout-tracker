@@ -96,6 +96,7 @@ export interface _SERVICE {
   'debugGetExerciseCounts' : ActorMethod<[], Array<[string, bigint]>>,
   'generateFullBodyWorkout' : ActorMethod<[], Result_4>,
   'generateLowerBodyWorkout' : ActorMethod<[], Result_4>,
+  'generateUpperBodyWorkout' : ActorMethod<[], Result_4>,
   'getCallerUserProfile' : ActorMethod<[], Result_1>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getLegSubgroupRecovery' : ActorMethod<[], Result_3>,

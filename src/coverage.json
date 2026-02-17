@@ -1,59 +1,56 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T22:58:24.650Z",
+  "generatedAt": "2026-02-17T00:23:49.963Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
+    "total": 4,
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Remove the TEST_RECOVERY_MODE flag and all TEST_RECOVERY/test-recovery logic from the Motoko backend, so workout generation always uses the normal recovery-based selection logic.",
+        "id": "REQ-4",
+        "summary": "In backend/main.mo, replace all invalid Motoko usages of `.toLower()` on Text with the correct Motoko Text module logic, focusing on workout generation filtering. Specifically, ensure that the filter blocks in both `buildShuffledSectionFromArray` and `buildShuffledSectionFromArrayWithLimit` use `Text.equal(Text.toLowercase(...), Text.toLowercase(...))` so leg subgroups (Quads, Hamstrings, Glutes, Calves) and all other muscle groups match case-insensitively.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-2",
-        "summary": "Remove any backend API surface used to expose test recovery mode status (e.g., an isTestRecoveryModeEnabled query) and update the generated frontend/backend bindings accordingly.",
+        "id": "REQ-5",
+        "summary": "In backend/main.mo, update `adjustRecoveryForTestMode` so that it forces 100% recovery for every muscle group (including quads/hamstrings/glutes/calves) by setting `lastTrained` to `0 - (100 * 3_600_000_000_000)` and `recoveryPercentage = 100.0` for each field in `RecoveryState`.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-3",
-        "summary": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
+        "id": "REQ-6",
+        "summary": "In backend/main.mo, enable real timestamps by importing the Motoko Time module (`import Time \"mo:base/Time\";`) and replacing `timestamp = 0` with `timestamp = Time.now()` in all workout generator functions: `generateFullBodyWorkout`, `generateUpperBodyWorkout`, and `generateLowerBodyWorkout`.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Build and deploy the updated draft Version 359 after applying REQ-4 through REQ-6, and ensure the final user-visible deployment response contains exactly the two confirmation lines specified by the user prompt.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/Header.tsx"
+          "frontend/DEPLOY_RETRY.md"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/Header.tsx"
+          "frontend/DEPLOY_RETRY.md"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/NewWorkoutPage.tsx",
-    "frontend/src/pages/WorkoutPreviewPage.tsx",
+    "frontend/DEPLOY_RETRY.md",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

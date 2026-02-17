@@ -144,6 +144,7 @@ export interface backendInterface {
     debugGetExerciseCounts(): Promise<Array<[string, bigint]>>;
     generateFullBodyWorkout(): Promise<Result_4>;
     generateLowerBodyWorkout(): Promise<Result_4>;
+    generateUpperBodyWorkout(): Promise<Result_4>;
     getCallerUserProfile(): Promise<Result_1>;
     getCallerUserRole(): Promise<UserRole>;
     getLegSubgroupRecovery(): Promise<Result_3>;

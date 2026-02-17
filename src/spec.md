@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Remove all test recovery mode functionality from the backend and delete related frontend “Test Mode” UI so workout generation always runs in normal mode.
+**Goal:** Fix Motoko text filtering, ensure test-mode recovery treats all muscle groups as fully recovered, and use real timestamps in generated workouts for Version 359.
 
 **Planned changes:**
-- Remove `TEST_RECOVERY_MODE` (and any equivalent toggle) and all associated test-recovery branching/shortcut logic from `backend/main.mo`.
-- Remove any backend method used to expose test recovery mode status (e.g., `isTestRecoveryModeEnabled`) and update regenerated frontend/backend bindings so the removed API is no longer referenced.
-- Delete the frontend test-mode query/hook (e.g., `useIsTestRecoveryModeEnabled` and the `['testRecoveryMode']` query) and remove the “Test Mode” badge/indicator from `frontend/src/components/Header.tsx`.
+- Replace all invalid `.toLower()` usage on Motoko `Text` in `backend/main.mo` with case-insensitive comparisons using `Text.toLowercase` + `Text.equal`, including filters in `buildShuffledSectionFromArray` and `buildShuffledSectionFromArrayWithLimit`.
+- Update `adjustRecoveryForTestMode` to force 100% recovery for every muscle group by setting each `RecoveryState` field to `lastTrained = 0 - (100 * 3_600_000_000_000)` and `recoveryPercentage = 100.0`.
+- Import `Time` and set workout `timestamp` to `Time.now()` in `generateFullBodyWorkout`, `generateUpperBodyWorkout`, and `generateLowerBodyWorkout`.
+- Build and deploy updated draft Version 359 with these backend changes.
 
-**User-visible outcome:** The app no longer shows any “Test Mode” indicator, and workout generation always uses the standard recovery-based selection logic.
+**User-visible outcome:** Generated workouts (including Full Body) correctly match muscle groups case-insensitively (including leg subgroups), test recovery mode treats all muscles as fully recovered, and workouts include real timestamps.

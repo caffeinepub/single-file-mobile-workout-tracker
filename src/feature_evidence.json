@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-remove-the-frontend-test-mode-indicator-and-associated-query-hook-usage-that-checks-test-recovery-mode-status",
-      "featureTitle": "Remove the frontend 'Test Mode' indicator and associated query/hook usage that checks test recovery mode status.",
+      "featureId": "feature-build-and-deploy-the-updated-draft-version-359-after-applying-req-4-through-req-6-and-ensure-the-final-user-visible-deployment-response-contains-exactly-the-two-confirmation-lines-specified-by-the-user-prompt",
+      "featureTitle": "Build and deploy the updated draft Version 359 after applying REQ-4 through REQ-6, and ensure the final user-visible deployment response contains exactly the two confirmation lines specified by the user prompt.",
       "files": [
-        "frontend/src/components/Header.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/DEPLOY_RETRY.md"
       ],
       "components": [
         "authorization@3.0.0",
@@ -20,7 +19,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-7"
       ],
       "confidence": "high"
     }
