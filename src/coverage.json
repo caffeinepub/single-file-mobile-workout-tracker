@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T20:21:19.013Z",
+  "generatedAt": "2026-02-18T18:59:48.007Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,21 +12,21 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In backend/main.mo, inside the function `buildShuffledSectionFromArrayWithLimit`, replace the existing `groupExercises` filter implementation with the following exact case-insensitive comparison:\n\n```motoko\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n```",
+        "summary": "In adjustRecoveryForTestMode, change the fullyRecoveredTime calculation to use a fixed past timestamp (epoch 0 or a timestamp from 365 days ago) instead of Time.now() - offset, so that lastTrained is always in the distant past and recovery always evaluates to 100%",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "In backend/main.mo, replace the entire `adjustRecoveryForTestMode` function with the following exact implementation (including signature) so test mode forces full recovery:\n\n```motoko\nfunc adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {\n  let fullyRecoveredTime = Time.now() - (100 * 3_600_000_000_000);\n  {\n    chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n  };\n}\n```",
+        "summary": "In calculateRecoveryPercentage, fix the elapsed time calculation to use Time.now() - lastTrained instead of 0 - lastTrained, so that elapsed nanoseconds is computed correctly and recovery percentage is accurate",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "In backend/main.mo, ensure `TEST_RECOVERY_MODE` remains set to `true` (do not change it to false and do not remove it).",
+        "summary": "Add debug logging in generateFullBodyWorkout to print the actual size of built sections (quadsSection.size(), hamstringsSection.size(), etc.) after calling buildShuffledSectionFromArrayWithLimit, so filter effectiveness can be verified",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []

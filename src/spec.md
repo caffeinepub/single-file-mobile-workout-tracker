@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Fix backend exercise grouping to be case-insensitive and ensure test mode forces full recovery.
+**Goal:** Fix recovery calculation logic to ensure leg exercises appear in Full Body workouts when test mode is enabled.
 
 **Planned changes:**
-- In `backend/main.mo`, update `buildShuffledSectionFromArrayWithLimit` to filter `groupExercises` using a case-insensitive comparison via `Text.toLowercase(...)` and `Text.equal(...)`.
-- In `backend/main.mo`, replace `adjustRecoveryForTestMode` with the provided implementation that sets all muscle groups to 100% recovery using a fully recovered timestamp.
-- Keep `TEST_RECOVERY_MODE` present and set to `true`.
+- Change adjustRecoveryForTestMode to set lastTrained to a fixed distant past timestamp (epoch 0 or 365 days ago) instead of Time.now() - offset, ensuring all muscle groups always evaluate to 100% recovery
+- Fix calculateRecoveryPercentage to use Time.now() - lastTrained instead of 0 - lastTrained for accurate elapsed time calculation
+- Add debug logging in generateFullBodyWorkout to print the actual size of leg exercise sections (quads, hamstrings, glutes, calves) after building them
 
-**User-visible outcome:** Workout generation and grouping behaves consistently regardless of muscle-group casing, and when test recovery mode is enabled the app behaves as fully recovered for all muscle groups.
+**User-visible outcome:** Full Body workouts will consistently include leg exercises (squats, lunges, calf raises, etc.) when TEST_RECOVERY_MODE is enabled, fixing the current issue where legs are skipped due to incorrect recovery calculations.

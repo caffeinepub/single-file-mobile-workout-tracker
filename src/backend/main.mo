@@ -415,10 +415,7 @@ actor {
     groupLimit : Nat,
   ) : [WorkoutExercise] {
     let groupExercises = exercises.filter(func(e) {
-      Text.equal(
-        e.primaryMuscleGroup.toLower(),
-        group.toLower()
-      )
+      Text.equal(e.primaryMuscleGroup.toLower(), group.toLower());
     });
     let shuffledGroup = shuffleArray(groupExercises, caller);
     let count = Nat.min(shuffledGroup.size(), groupLimit);
@@ -581,30 +578,39 @@ actor {
     let chestSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Chest", 2
     );
+    Debug.print("Chest section size after filtering: " # chestSection.size().toText());
     let backSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Back", 2
     );
+    Debug.print("Back section size after filtering: " # backSection.size().toText());
     let quadsSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Quads", 2
     );
+    Debug.print("Quads section size after filtering: " # quadsSection.size().toText());
     let hamstringsSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Hamstrings", 2
     );
+    Debug.print("Hamstrings section size after filtering: " # hamstringsSection.size().toText());
     let glutesSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Glutes", 1
     );
+    Debug.print("Glutes section size after filtering: " # glutesSection.size().toText());
     let calvesSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Calves", 1
     );
+    Debug.print("Calves section size after filtering: " # calvesSection.size().toText());
     let shouldersSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Shoulders", 1
     );
+    Debug.print("Shoulders section size after filtering: " # shouldersSection.size().toText());
     let armsSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Arms", 1
     );
+    Debug.print("Arms section size after filtering: " # armsSection.size().toText());
     let coreSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Core", 2
     );
+    Debug.print("Core section size after filtering: " # coreSection.size().toText());
 
     let allExercises = chestSection.concat(backSection).concat(quadsSection)
       .concat(hamstringsSection).concat(glutesSection)
@@ -646,12 +652,11 @@ actor {
     groupLimit : Nat,
   ) : [WorkoutExercise] {
     if (groupLimit == 0) { return [] };
+
     let groupExercises = exercises.filter(func(e) {
-      Text.equal(
-        e.primaryMuscleGroup.toLower(),
-        group.toLower()
-      )
+      Text.equal(e.primaryMuscleGroup.toLower(), group.toLower());
     });
+
     let shuffledGroup = shuffleArray(groupExercises, caller);
     let count = Nat.min(shuffledGroup.size(), groupLimit);
     let selected = if (shuffledGroup.size() > count) {
@@ -756,7 +761,7 @@ actor {
   };
 
   func calculateRecoveryPercentage(lastTrained : Int, recoveryTimeHours : Int) : Float {
-    let elapsedNanos = 0 - lastTrained;
+    let elapsedNanos = Time.now() - lastTrained;
     let elapsedHours = toF(elapsedNanos) / toF(3_600_000_000_000 : Int);
     let percentage = Float.min(100.0, (elapsedHours / toF(recoveryTimeHours)) * 100.0);
     percentage;
@@ -821,7 +826,7 @@ actor {
   };
 
   func adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {
-    let fullyRecoveredTime = Time.now() - (100 * 3_600_000_000_000);
+    let fullyRecoveredTime = 0;
     {
       chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
       back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
