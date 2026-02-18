@@ -1,32 +1,31 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Motoko backend for a workout generator app (Version 360) with focus on fixing missing leg exercises in Full Body workouts and adding diagnostic logging.",
+  "summary": "Motoko workout-generator backend: fix missing leg exercises by aligning recovery gating and muscle-group filtering; user requests targeted changes in main.mo and build versions (362–364) but builds fail due to missing/unknown backend file state.",
   "architectural_notes": [
-    "String comparisons for muscle group matching should be normalized using Text.toLowercase() and compared with Text.equal().",
-    "Add temporary Debug.print diagnostics in generateFullBodyWorkout to log requested exercise counts per muscle group during testing."
+    "Backend is Motoko (main.mo) with exercise library + workout generation (generateFullBodyWorkout), recovery state gating, and helpers (buildShuffledSectionFromArrayWithLimit, uniqueByName, calculateRecoveryPercentage)."
   ],
   "known_issues": [
-    "Leg exercises still missing in Full Body workout generation (only 8 exercises shown); recovery may not be reaching 100% for leg subgroups."
+    "Builds/edits fail because the system cannot access/confirm the existing backend main.mo (project reported as empty/missing required files), so requested all-or-nothing changes cannot be applied."
   ],
   "isFixRequest": true,
   "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix backend bug where leg exercises do not appear in Full Body workouts by replacing custom/incorrect lowercase comparisons with Text.toLowercase + Text.equal across filter logic.",
+      "summary": "Leg fix-only change (v364): make group filter case-insensitive in buildShuffledSectionFromArrayWithLimit and force 100% recovery for all groups in adjustRecoveryForTestMode; keep TEST_RECOVERY_MODE=true; build.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Force test recovery state to 100% for all muscle groups (update adjustRecoveryForTestMode) and add Debug.print logs in generateFullBodyWorkout for requested counts per muscle group.",
+      "summary": "Backend production hardening refactor (v362): switch mo:core to mo:base, make persistent state stable, add preupgrade/postupgrade Map serialization, fix recovery math, rewrite uniqueByName using Buffer, dedupe builder functions, normalize muscle group names, move constants to top-level; build.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "In backend/main.mo, replace the entire implementation of `adjustRecoveryForTestMode(_caller : Principal) : RecoveryState` with the exact code block provided by the user, including `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` and setting `recoveryPercentage = 100.0` for chest, back, shoulders, arms, core, quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery.",
+      "summary": "In backend/main.mo, inside the function `buildShuffledSectionFromArrayWithLimit`, replace the existing `groupExercises` filter implementation with the following exact case-insensitive comparison:\n\n```motoko\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n```",
       "reqIds": [
         "REQ-1"
       ],
@@ -34,13 +33,22 @@
     },
     {
       "id": "AR-4",
-      "summary": "In backend/main.mo, inside `generateFullBodyWorkout`, add the provided `Debug.print(...)` statements after each relevant section so the canister logs output the requested exercise counts for Chest, Quads, Hamstrings, Glutes, and Calves using `getExerciseCountForGroup(\"<Group>\", currentRecovery).toText()` exactly as provided by the user.",
+      "summary": "In backend/main.mo, replace the entire `adjustRecoveryForTestMode` function with the following exact implementation (including signature) so test mode forces full recovery:\n\n```motoko\nfunc adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {\n  let fullyRecoveredTime = Time.now() - (100 * 3_600_000_000_000);\n  {\n    chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n  };\n}\n```",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "In backend/main.mo, ensure `TEST_RECOVERY_MODE` remains set to `true` (do not change it to false and do not remove it).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
     }
   ],
+  "gameProjectType": "none",
   "projectName": "Workout Generator",
   "clarification_mode": "instant",
   "clarification_rounds": 0

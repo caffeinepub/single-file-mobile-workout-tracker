@@ -415,9 +415,10 @@ actor {
     groupLimit : Nat,
   ) : [WorkoutExercise] {
     let groupExercises = exercises.filter(func(e) {
-      let exerciseGroupLower = e.primaryMuscleGroup.toLower();
-      let targetGroupLower = group.toLower();
-      Text.equal(exerciseGroupLower, targetGroupLower);
+      Text.equal(
+        e.primaryMuscleGroup.toLower(),
+        group.toLower()
+      )
     });
     let shuffledGroup = shuffleArray(groupExercises, caller);
     let count = Nat.min(shuffledGroup.size(), groupLimit);
@@ -646,9 +647,10 @@ actor {
   ) : [WorkoutExercise] {
     if (groupLimit == 0) { return [] };
     let groupExercises = exercises.filter(func(e) {
-      let exerciseGroupLower = e.primaryMuscleGroup.toLower();
-      let targetGroupLower = group.toLower();
-      Text.equal(exerciseGroupLower, targetGroupLower);
+      Text.equal(
+        e.primaryMuscleGroup.toLower(),
+        group.toLower()
+      )
     });
     let shuffledGroup = shuffleArray(groupExercises, caller);
     let count = Nat.min(shuffledGroup.size(), groupLimit);
@@ -819,16 +821,17 @@ actor {
   };
 
   func adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {
+    let fullyRecoveredTime = Time.now() - (100 * 3_600_000_000_000);
     {
-      chest = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      back = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      shoulders = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      arms = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      core = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      quadsRecovery = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      hamstringsRecovery = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      glutesRecovery = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
-      calvesRecovery = { lastTrained = 0 - (100 * 3_600_000_000_000); recoveryPercentage = 100.0 };
+      chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
+      calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
     };
   };
 };

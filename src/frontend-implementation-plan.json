@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Workout Generator — Frontend-only plan (no changes required for backend-only request)",
+  "title": "Version 364: Frontend impact assessment (no frontend changes required)",
   "requirements": []
 }

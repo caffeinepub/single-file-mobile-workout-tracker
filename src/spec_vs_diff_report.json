@@ -1,36 +1,44 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T19:23:23.402Z",
-  "summary": "Diff does not provide evidence that REQ-1 (replace adjustRecoveryForTestMode) or REQ-2 (add five Debug.print lines in generateFullBodyWorkout) were implemented in backend/main.mo. Additionally, an extra file (project_state.json) was modified, which violates the constraint to keep changes confined to backend/main.mo.",
+  "generatedAt": "2026-02-17T20:21:19.010Z",
+  "summary": "Cannot verify implementation of the requested backend changes because backend/main.mo is truncated before the relevant functions appear. Additionally, an extra file (project_state.json) was modified, violating the constraint to modify only backend/main.mo.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "In backend/main.mo, replace the entire implementation of adjustRecoveryForTestMode(_caller : Principal) : RecoveryState with the exact provided code block (including fullyRecoveredTime = 0 - (100 * 3_600_000_000_000); and recoveryPercentage = 100.0 for chest/back/shoulders/arms/core/quadsRecovery/hamstringsRecovery/glutesRecovery/calvesRecovery).",
-      "reason": "The provided diff excerpt of backend/main.mo is truncated and does not include adjustRecoveryForTestMode, so there is no evidence the function body was replaced as required.",
+      "requirement": "In backend/main.mo, inside buildShuffledSectionFromArrayWithLimit, replace groupExercises filter with the exact case-insensitive Text.toLowercase/Text.equal comparison provided.",
+      "reason": "The diff snippet for backend/main.mo is truncated and does not include buildShuffledSectionFromArrayWithLimit or the groupExercises filter block, so there is no evidence this exact replacement was made.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/main.mo (truncated; function not shown)"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "In backend/main.mo, inside generateFullBodyWorkout, add exactly five specified Debug.print(...) statements to log requested exercise counts for Chest, Quads, Hamstrings, Glutes, and Calves using getExerciseCountForGroup(\"<Group>\", currentRecovery).toText().",
-      "reason": "The provided diff excerpt of backend/main.mo is truncated and does not include generateFullBodyWorkout or any of the required Debug.print lines, so there is no evidence the logging was added.",
+      "requirement": "Replace the entire adjustRecoveryForTestMode function in backend/main.mo with the exact provided implementation that forces full recovery (100.0) for all fields using Time.now() - (100 * 3_600_000_000_000).",
+      "reason": "The diff snippet for backend/main.mo is truncated and does not include adjustRecoveryForTestMode, so there is no evidence the function was fully replaced with the exact provided code.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/main.mo (truncated; function not shown)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Ensure TEST_RECOVERY_MODE remains set to true in backend/main.mo (do not remove or set false).",
+      "reason": "The diff snippet for backend/main.mo shown does not include TEST_RECOVERY_MODE, so its presence/value cannot be confirmed from the provided evidence.",
+      "evidence": [
+        "backend/main.mo (truncated; constant not shown)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Modified project_state.json (project metadata/state) despite requirement/constraint to keep all changes confined to backend/main.mo and avoid schema/state changes.",
-      "reason": "BuildRequest explicitly constrains changes to backend/main.mo only; project_state.json was modified and includes new/altered summaries and feature request entries not part of the two specified backend changes.",
+      "description": "Modified an additional file (project_state.json), despite the constraint to modify only backend/main.mo and to apply only the two requested code changes (plus keeping TEST_RECOVERY_MODE=true).",
+      "reason": "BuildRequest constraints explicitly limit changes to backend/main.mo only and only the two specified code replacements; the diff shows project_state.json was modified.",
       "evidence": [
         "project_state.json"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
     "project_state.json"

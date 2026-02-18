@@ -1,54 +1,70 @@
 {
   "kind": "build_request",
-  "title": "Force 100% test-mode recovery for leg subgroups and add Full Body requested-count debug logs (Version 360)",
+  "title": "Version 364: Backend leg fix-only (case-insensitive group filter + test recovery override)",
   "projectName": "Workout Generator",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In backend/main.mo, replace the entire implementation of `adjustRecoveryForTestMode(_caller : Principal) : RecoveryState` with the exact code block provided by the user, including `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` and setting `recoveryPercentage = 100.0` for chest, back, shoulders, arms, core, quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery.",
+      "text": "In backend/main.mo, inside the function `buildShuffledSectionFromArrayWithLimit`, replace the existing `groupExercises` filter implementation with the following exact case-insensitive comparison:\n\n```motoko\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n```",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-USER-V364"
         ],
         "quotes": [
-          "Replace adjustRecoveryForTestMode with:\n\nfunc adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {\n  let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);\n  {\n    chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n  };\n}"
+          "In buildShuffledSectionFromArrayWithLimit, replace the filter with:\n\nmotoko\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});"
         ]
       },
       "acceptanceCriteria": [
-        "When TEST_RECOVERY_MODE behavior is applied, the resulting RecoveryState has recoveryPercentage == 100.0 for quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery (as well as chest/back/shoulders/arms/core).",
-        "No other functions or logic in backend/main.mo are modified as part of this requirement (only the body of adjustRecoveryForTestMode is replaced)."
+        "`buildShuffledSectionFromArrayWithLimit` compiles and uses `Text.toLowercase(...)` on both `e.primaryMuscleGroup` and `group` and compares via `Text.equal(...)`.",
+        "No other logic in `buildShuffledSectionFromArrayWithLimit` is modified beyond replacing the filter block."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In backend/main.mo, inside `generateFullBodyWorkout`, add the provided `Debug.print(...)` statements after each relevant section so the canister logs output the requested exercise counts for Chest, Quads, Hamstrings, Glutes, and Calves using `getExerciseCountForGroup(\"<Group>\", currentRecovery).toText()` exactly as provided by the user.",
+      "text": "In backend/main.mo, replace the entire `adjustRecoveryForTestMode` function with the following exact implementation (including signature) so test mode forces full recovery:\n\n```motoko\nfunc adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {\n  let fullyRecoveredTime = Time.now() - (100 * 3_600_000_000_000);\n  {\n    chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n  };\n}\n```",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-USER-V364"
         ],
         "quotes": [
-          "In generateFullBodyWorkout, add Debug.print after each section:\n\nDebug.print(\"Chest requested: \" # getExerciseCountForGroup(\"Chest\", currentRecovery).toText());\nDebug.print(\"Quads requested: \" # getExerciseCountForGroup(\"Quads\", currentRecovery).toText());\nDebug.print(\"Hamstrings requested: \" # getExerciseCountForGroup(\"Hamstrings\", currentRecovery).toText());\nDebug.print(\"Glutes requested: \" # getExerciseCountForGroup(\"Glutes\", currentRecovery).toText());\nDebug.print(\"Calves requested: \" # getExerciseCountForGroup(\"Calves\", currentRecovery).toText());"
+          "In adjustRecoveryForTestMode, replace the entire function with:\n\nmotoko\nfunc adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {\n  let fullyRecoveredTime = Time.now() - (100 * 3_600_000_000_000);\n  {\n    chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n  };\n}"
         ]
       },
       "acceptanceCriteria": [
-        "Triggering Full Body workout generation results in canister debug logs containing the five lines with prefixes: \"Chest requested:\", \"Quads requested:\", \"Hamstrings requested:\", \"Glutes requested:\", and \"Calves requested:\".",
-        "The printed values reflect the output of `getExerciseCountForGroup` using the `currentRecovery` value used by `generateFullBodyWorkout` at runtime.",
-        "No additional logging beyond the five specified Debug.print lines is added."
+        "`adjustRecoveryForTestMode` matches the provided code exactly (signature, `Time.now() - (100 * 3_600_000_000_000)`, and all fields set to 100.0).",
+        "No other recovery-related functions are changed."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "In backend/main.mo, ensure `TEST_RECOVERY_MODE` remains set to `true` (do not change it to false and do not remove it).",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-USER-V364"
+        ],
+        "quotes": [
+          "Keep TEST_RECOVERY_MODE = true"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`TEST_RECOVERY_MODE` is still present and set to `true` after the changes.",
+        "No additional code changes are made beyond REQ-1 and REQ-2."
       ]
     }
   ],
   "constraints": [
-    "Do nothing else beyond the two specified backend changes (1) replace adjustRecoveryForTestMode exactly as provided and (2) add only the specified Debug.print lines in generateFullBodyWorkout.",
-    "Keep all changes confined to backend/main.mo.",
-    "Do not introduce schema/state changes requiring backend/migration.mo."
+    "Modify only backend/main.mo.",
+    "Apply only the two requested code changes (filter replacement in `buildShuffledSectionFromArrayWithLimit`, and full replacement of `adjustRecoveryForTestMode`), plus explicitly keeping `TEST_RECOVERY_MODE = true`.",
+    "Do not change imports, state variables, other functions, or add new debug logging.",
+    "Do not request additional files or clarifications in the implementation workflow."
   ],
   "nonGoals": [
-    "Do not modify any muscle-group string normalization or filtering logic (e.g., Text.toLowercase/Text.equal changes) as part of this request.",
-    "Do not change workout timestamps, workout composition logic, exercise library contents, or frontend behavior.",
-    "Do not add new endpoints, admin tools, or UI changes."
+    "Do not perform the previously requested Version 362 refactor (mo:core to mo:base, stable vars, preupgrade/postupgrade, Buffer-based uniqueByName, deduplication of builder functions, moving constants).",
+    "Do not modify frontend code."
   ],
   "imageRequirements": {
     "required": [],

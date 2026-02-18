@@ -1,25 +1,32 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T19:23:23.405Z",
+  "generatedAt": "2026-02-17T20:21:19.013Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
+    "total": 3,
     "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In backend/main.mo, replace the entire implementation of `adjustRecoveryForTestMode(_caller : Principal) : RecoveryState` with the exact code block provided by the user, including `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` and setting `recoveryPercentage = 100.0` for chest, back, shoulders, arms, core, quadsRecovery, hamstringsRecovery, glutesRecovery, and calvesRecovery.",
+        "summary": "In backend/main.mo, inside the function `buildShuffledSectionFromArrayWithLimit`, replace the existing `groupExercises` filter implementation with the following exact case-insensitive comparison:\n\n```motoko\nlet groupExercises = exercises.filter(func(e) {\n  Text.equal(\n    Text.toLowercase(e.primaryMuscleGroup),\n    Text.toLowercase(group)\n  )\n});\n```",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "In backend/main.mo, inside `generateFullBodyWorkout`, add the provided `Debug.print(...)` statements after each relevant section so the canister logs output the requested exercise counts for Chest, Quads, Hamstrings, Glutes, and Calves using `getExerciseCountForGroup(\"<Group>\", currentRecovery).toText()` exactly as provided by the user.",
+        "summary": "In backend/main.mo, replace the entire `adjustRecoveryForTestMode` function with the following exact implementation (including signature) so test mode forces full recovery:\n\n```motoko\nfunc adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {\n  let fullyRecoveredTime = Time.now() - (100 * 3_600_000_000_000);\n  {\n    chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    shoulders = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    arms = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    core = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    quadsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    hamstringsRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    glutesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n    calvesRecovery = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };\n  };\n}\n```",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "In backend/main.mo, ensure `TEST_RECOVERY_MODE` remains set to `true` (do not change it to false and do not remove it).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
