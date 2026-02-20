@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix recovery calculation to unblock leg exercises in Full Body workouts",
+  "title": "Fix filter syntax and force full recovery in test mode (Version 367) - Frontend Plan",
   "requirements": []
 }

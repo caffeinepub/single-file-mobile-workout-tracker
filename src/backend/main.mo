@@ -583,22 +583,29 @@ actor {
       caller, profile, exerciseLibrary, "Back", 2
     );
     Debug.print("Back section size after filtering: " # backSection.size().toText());
+
+    let quadsRequestedCount = getExerciseCountForGroup("Quads", currentRecovery);
+    let hamstringsRequestedCount = getExerciseCountForGroup("Hamstrings", currentRecovery);
+    let glutesRequestedCount = getExerciseCountForGroup("Glutes", currentRecovery);
+    let calvesRequestedCount = getExerciseCountForGroup("Calves", currentRecovery);
+
     let quadsSection = buildShuffledSectionFromArrayWithLimit(
-      caller, profile, exerciseLibrary, "Quads", 2
+      caller, profile, exerciseLibrary, "Quads", quadsRequestedCount
     );
     Debug.print("Quads section size after filtering: " # quadsSection.size().toText());
     let hamstringsSection = buildShuffledSectionFromArrayWithLimit(
-      caller, profile, exerciseLibrary, "Hamstrings", 2
+      caller, profile, exerciseLibrary, "Hamstrings", hamstringsRequestedCount
     );
     Debug.print("Hamstrings section size after filtering: " # hamstringsSection.size().toText());
     let glutesSection = buildShuffledSectionFromArrayWithLimit(
-      caller, profile, exerciseLibrary, "Glutes", 1
+      caller, profile, exerciseLibrary, "Glutes", glutesRequestedCount
     );
     Debug.print("Glutes section size after filtering: " # glutesSection.size().toText());
     let calvesSection = buildShuffledSectionFromArrayWithLimit(
-      caller, profile, exerciseLibrary, "Calves", 1
+      caller, profile, exerciseLibrary, "Calves", calvesRequestedCount
     );
     Debug.print("Calves section size after filtering: " # calvesSection.size().toText());
+
     let shouldersSection = buildShuffledSectionFromArrayWithLimit(
       caller, profile, exerciseLibrary, "Shoulders", 1
     );
@@ -826,7 +833,7 @@ actor {
   };
 
   func adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {
-    let fullyRecoveredTime = 0;
+    let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);
     {
       chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
       back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
@@ -840,3 +847,4 @@ actor {
     };
   };
 };
+

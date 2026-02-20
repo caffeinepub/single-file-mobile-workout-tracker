@@ -1,76 +1,93 @@
 {
   "kind": "build_request",
-  "title": "Fix recovery calculation to unblock leg exercises in Full Body workouts",
+  "title": "Fix filter syntax and force full recovery in test mode (Version 367)",
+  "projectName": "FitTrack",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "In adjustRecoveryForTestMode, change the fullyRecoveredTime calculation to use a fixed past timestamp (epoch 0 or a timestamp from 365 days ago) instead of Time.now() - offset, so that lastTrained is always in the distant past and recovery always evaluates to 100%",
+      "id": "REQ-5",
+      "text": "In buildShuffledSectionFromArray function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-final"
+          "msg-5"
         ],
         "quotes": [
-          "adjustRecoveryForTestMode uses Time.now() as the base for fullyRecoveredTime. This means lastTrained is set to nearly the current time (minus 100 hours), but because the function runs at generation time, elapsed = Time.now() - lastTrained is very small (milliseconds) → recovery % is near 0% → legs get skipped."
+          "Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())",
+          "Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))"
         ]
       },
       "acceptanceCriteria": [
-        "adjustRecoveryForTestMode sets lastTrained to a fixed timestamp in the distant past (e.g., 0 or Time.now() - 365*24*3600*1_000_000_000)",
-        "All muscle groups including Quads, Hamstrings, Glutes, and Calves consistently evaluate to 100% recovery in test mode",
-        "Leg exercises appear in generated Full Body workouts when TEST_RECOVERY_MODE is true"
+        "The filter in buildShuffledSectionFromArray uses Text.toLowercase() function instead of .toLower() method",
+        "Deployed code can be read and verified to contain 'Text.toLowercase(e.primaryMuscleGroup)' in the filter"
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "In calculateRecoveryPercentage, fix the elapsed time calculation to use Time.now() - lastTrained instead of 0 - lastTrained, so that elapsed nanoseconds is computed correctly and recovery percentage is accurate",
+      "id": "REQ-6",
+      "text": "In buildShuffledSectionFromArrayWithLimit function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-final"
+          "msg-5"
         ],
         "quotes": [
-          "Recovery math still uses 0 as 'now' in calculateRecoveryPercentage: elapsedNanos = 0 - lastTrained → wrong base (should be Time.now() - lastTrained)"
+          "Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())",
+          "Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))"
         ]
       },
       "acceptanceCriteria": [
-        "calculateRecoveryPercentage uses Time.now() as the current time reference",
-        "elapsedNanos is computed as Time.now() - lastTrained",
-        "Recovery percentages are non-negative and reflect actual time elapsed since last training"
+        "The filter in buildShuffledSectionFromArrayWithLimit uses Text.toLowercase() function instead of .toLower() method",
+        "Deployed code can be read and verified to contain 'Text.toLowercase(e.primaryMuscleGroup)' in the filter"
       ]
     },
     {
-      "id": "REQ-3",
-      "text": "Add debug logging in generateFullBodyWorkout to print the actual size of built sections (quadsSection.size(), hamstringsSection.size(), etc.) after calling buildShuffledSectionFromArrayWithLimit, so filter effectiveness can be verified",
+      "id": "REQ-7",
+      "text": "In the adjustRecoveryForTestMode function in backend/main.mo, change the line 'let fullyRecoveredTime = 0;' to 'let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);' to force 100% recovery status for all muscle groups when TEST_RECOVERY_MODE = true",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-final"
+          "msg-5"
         ],
         "quotes": [
-          "No size logs after building sections in generateFullBodyWorkout: Prints requested count, but not .size() of sections → can't confirm if filter returned exercises"
+          "let fullyRecoveredTime = 0;",
+          "let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);"
         ]
       },
       "acceptanceCriteria": [
-        "Debug.print statements log the .size() of quadsSection, hamstringsSection, glutesSection, and calvesSection after they are built",
-        "Logs appear in the canister console during workout generation",
-        "Logs confirm that filtered sections contain the expected number of exercises"
+        "The adjustRecoveryForTestMode function sets fullyRecoveredTime using a negative offset calculation",
+        "Deployed code can be read and verified to contain 'fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)'",
+        "TEST_RECOVERY_MODE remains set to true"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "After deployment, verify that both fixes are present in the deployed backend code: confirm Text.toLowercase is used in both filter functions and fullyRecoveredTime uses the negative offset calculation",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-5"
+        ],
+        "quotes": [
+          "read the deployed code and confirm both fixes are present"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Deployed main.mo file contains 'Text.toLowercase(e.primaryMuscleGroup)' in buildShuffledSectionFromArray",
+        "Deployed main.mo file contains 'Text.toLowercase(e.primaryMuscleGroup)' in buildShuffledSectionFromArrayWithLimit",
+        "Deployed main.mo file contains 'fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)' in adjustRecoveryForTestMode"
       ]
     }
   ],
   "constraints": [
-    "Do not change the backend architecture or introduce multiple actors",
-    "Preserve existing frontend immutable paths (useInternetIdentity, useActor, main.tsx, components/ui)",
-    "Keep TEST_RECOVERY_MODE = true enabled during this fix",
-    "Maintain existing exercise library and workout generation logic structure"
+    "Keep TEST_RECOVERY_MODE = true",
+    "Do not change anything else in main.mo beyond the two specified fixes",
+    "Build as Version 367"
   ],
   "nonGoals": [
-    "Refactoring imports from mo:core to mo:base",
-    "Rewriting uniqueByName to use Buffer instead of List",
-    "Adding stable variables for state persistence",
-    "Implementing preupgrade/postupgrade hooks",
-    "Extracting hard-coded magic numbers into constants",
-    "Frontend UI changes or styling updates"
+    "Refactoring other parts of the codebase",
+    "Changing the recovery calculation logic beyond the test mode adjustment",
+    "Modifying frontend components",
+    "Adding new features or functionality"
   ],
   "imageRequirements": {
     "required": [],
