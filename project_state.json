@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 13,
+  "summary": "Motoko workout-generator backend: v366 deployed leg-section variable fix but legs still missing (0 exercises); root cause is invalid filter syntax (.toLower() → Text.toLowercase) + insufficient test-mode recovery offset; v367 will fix filter and force recovery to 100% in TEST_RECOVERY_MODE.",
+  "architectural_notes": [
+    "Backend is Motoko (main.mo) with exercise library + workout generation (generateFullBodyWorkout), recovery state gating, and helpers (buildShuffledSectionFromArrayWithLimit, uniqueByName, calculateRecoveryPercentage).",
+    "v364 deployed: recovery math fixed (Time.now() base in calculateRecoveryPercentage, epoch 0 in adjustRecoveryForTestMode), debug logs added for section sizes",
+    "LegSubgroupRecovery type includes 'legs' field as composite/aggregate recovery value (min/avg of quads/hamstrings/glutes/calves) for dashboard summaries",
+    "v366 applied variable substitution (quadsRequestedCount, etc.) but legs still missing due to invalid filter syntax (.toLower() method does not exist on Text) and insufficient test-mode recovery offset",
+    "Filter bug: buildShuffledSectionFromArray(WithLimit) uses e.primaryMuscleGroup.toLower() which fails silently → returns 0 exercises for legs"
+  ],
+  "known_issues": [
+    "Imports use mo:core/* instead of mo:base/* (production risk on IC)",
+    "uniqueByName uses List.empty() + .add (invalid for immutable List in mo:base/mo:core) → could silently drop exercises",
+    "No stable var for Maps → state lost on canister upgrade",
+    "No preupgrade/postupgrade hooks → persistence unsafe",
+    "Hard-coded magic numbers (3_600_000_000_000, recovery thresholds) should be named constants",
+    "Filter syntax bug: buildShuffledSectionFromArray(WithLimit) uses .toLower() method (invalid in Motoko) instead of Text.toLowercase() function → silent failure, returns empty arrays for leg exercises",
+    "TEST_RECOVERY_MODE uses fullyRecoveredTime = 0 (epoch) which may not force 100% recovery; should use negative offset (0 - 100*3_600_000_000_000) to guarantee full recovery state"
+  ],
+  "isFixRequest": true,
+  "existing_features": [],
+  "new_feature_requests": [
+    {
+      "id": "AR-2",
+      "summary": "Backend production hardening refactor (v362): switch mo:core to mo:base, make persistent state stable, add preupgrade/postupgrade Map serialization, fix recovery math, rewrite uniqueByName using Buffer, dedupe builder functions, normalize muscle group names, move constants to top-level; build.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Fix filter syntax in buildShuffledSectionFromArray and buildShuffledSectionFromArrayWithLimit: replace Text.equal(e.primaryMuscleGroup.toLower(), group.toLower()) with Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group)).",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Force 100% recovery in TEST_RECOVERY_MODE by changing adjustRecoveryForTestMode: set fullyRecoveredTime = 0 - (100 * 3_600_000_000_000) instead of 0.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "In buildShuffledSectionFromArray function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "In buildShuffledSectionFromArrayWithLimit function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "In the adjustRecoveryForTestMode function in backend/main.mo, change the line 'let fullyRecoveredTime = 0;' to 'let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);' to force 100% recovery status for all muscle groups when TEST_RECOVERY_MODE = true",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "After deployment, verify that both fixes are present in the deployed backend code: confirm Text.toLowercase is used in both filter functions and fullyRecoveredTime uses the negative offset calculation",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Workout Generator",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

@@ -1,0 +1,301 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode - disabled, dark mode enforced globally */
+    --background: 0 0% 5.9%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 9.4%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 9.4%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 199 82% 49%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 67%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 67%;
+    --accent: 199 82% 49%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 4 90% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 100% / 0.08;
+    --input: 0 0% 9.4%;
+    --ring: 199 82% 49%;
+    --success: 145 100% 39%;
+    --radius: 1rem;
+    --chart-1: 199 82% 49%;
+    --chart-2: 145 100% 39%;
+    --chart-3: 280 100% 70%;
+    --chart-4: 330 100% 63%;
+    --chart-5: 120 100% 50%;
+  }
+
+  .dark {
+    /* Telegram 2025 Dark Theme - Exact Colors */
+    /* Background: #0F0F0F (matte black) */
+    --background: 0 0% 5.9%;
+    /* Text: Pure white #FFFFFF */
+    --foreground: 0 0% 100%;
+    /* Card/Panel background: #181818 */
+    --card: 0 0% 9.4%;
+    --card-foreground: 0 0% 100%;
+    /* Popover background: #181818 */
+    --popover: 0 0% 9.4%;
+    --popover-foreground: 0 0% 100%;
+    /* Primary Accent: #229ED9 (Telegram blue) */
+    --primary: 199 82% 49%;
+    --primary-foreground: 0 0% 100%;
+    /* Secondary text: #AAAAAA */
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 67%;
+    /* Muted elements */
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 67%;
+    /* Accent pressed/active: #229ED9 */
+    --accent: 199 82% 49%;
+    --accent-foreground: 0 0% 100%;
+    /* Error color: #F44336 */
+    --destructive: 4 90% 58%;
+    --destructive-foreground: 0 0% 100%;
+    /* Border color: rgba(255,255,255,0.08) */
+    --border: 0 0% 100% / 0.08;
+    /* Input backgrounds: #181818 */
+    --input: 0 0% 9.4%;
+    /* Ring color: #229ED9 */
+    --ring: 199 82% 49%;
+    /* Success color: #00C853 */
+    --success: 145 100% 39%;
+    /* Chart colors - Telegram blue theme */
+    --chart-1: 199 82% 49%;
+    --chart-2: 145 100% 39%;
+    --chart-3: 280 100% 70%;
+    --chart-4: 330 100% 63%;
+    --chart-5: 120 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
+  
+  /* Force dark mode globally - NO light mode fallback */
+  html {
+    color-scheme: dark only;
+    background-color: #0F0F0F;
+  }
+  
+  /* Ensure all elements use dark background */
+  html, body, #root {
+    background-color: #0F0F0F;
+    color: #FFFFFF;
+  }
+}
+
+/* Font preloading for instant rendering */
+@font-face {
+  font-family: 'System';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('system-ui'), local('-apple-system'), local('BlinkMacSystemFont');
+}
+
+/* Mobile-optimized typography */
+@layer base {
+  html {
+    font-size: 16px;
+  }
+  
+  @media (max-width: 640px) {
+    html {
+      font-size: 15px;
+    }
+  }
+}
+
+/* iOS Safe Area Support */
+@layer utilities {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Prevent overscroll bounce on iOS */
+@layer base {
+  html, body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Minimum tap target size for mobile */
+@layer utilities {
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Native-style page transitions - optimized for 60fps */
+@layer utilities {
+  .page-transition-slide-left {
+    animation: slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  
+  .page-transition-slide-right {
+    animation: slideInFromLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  
+  .page-transition-fade {
+    animation: fadeIn 0.2s ease-out;
+    will-change: opacity;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translate3d(100%, 0, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translate3d(-100%, 0, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Telegram-style hover and tap animations */
+@layer utilities {
+  .telegram-hover {
+    transition: all 0.15s ease-out;
+  }
+  
+  .telegram-hover:hover {
+    transform: scale(1.01);
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .telegram-hover:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Z-index layers */
+@layer utilities {
+  .z-bottom-nav {
+    z-index: 40;
+  }
+}
+
+/* Enhanced number input styling for mobile */
+@layer components {
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+  
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/* Frosted glass effect for modals - Telegram style */
+@layer utilities {
+  .frosted-glass {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background-color: rgba(24, 24, 24, 0.95);
+  }
+}
+
+/* Performance optimizations */
+@layer utilities {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+
+/* Telegram-style glow effects - matte, subtle */
+@layer utilities {
+  .shadow-glow-primary {
+    box-shadow: 0 0 20px rgba(34, 158, 217, 0.3);
+  }
+  
+  .shadow-glow-accent {
+    box-shadow: 0 0 20px rgba(34, 158, 217, 0.2);
+  }
+}
+
+/* Override any potential light mode styles */
+@layer base {
+  /* Ensure inputs always use dark theme */
+  input, textarea, select {
+    background-color: #181818;
+    color: #FFFFFF;
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  
+  input::placeholder, textarea::placeholder {
+    color: #AAAAAA;
+  }
+  
+  /* Ensure buttons use Telegram blue */
+  button[data-primary="true"], .btn-primary {
+    background-color: #229ED9;
+    color: #FFFFFF;
+  }
+  
+  button[data-primary="true"]:hover, .btn-primary:hover {
+    background-color: #1D88BD;
+  }
+}
+

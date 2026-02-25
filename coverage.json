@@ -1,0 +1,57 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-20T22:09:34.063Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 4,
+    "implemented": 0,
+    "items": [
+      {
+        "id": "REQ-5",
+        "summary": "In buildShuffledSectionFromArray function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-6",
+        "summary": "In buildShuffledSectionFromArrayWithLimit function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-7",
+        "summary": "In the adjustRecoveryForTestMode function in backend/main.mo, change the line 'let fullyRecoveredTime = 0;' to 'let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);' to force 100% recovery status for all muscle groups when TEST_RECOVERY_MODE = true",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-8",
+        "summary": "After deployment, verify that both fixes are present in the deployed backend code: confirm Text.toLowercase is used in both filter functions and fullyRecoveredTime uses the negative offset calculation",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}
