@@ -8,7 +8,6 @@ import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Principal "mo:core/Principal";
 import Text "mo:core/Text";
-
 import AccessControl "authorization/access-control";
 import Debug "mo:core/Debug";
 
@@ -250,6 +249,30 @@ actor {
       recoveryTime = 72;
     }
   ];
+
+  // Contains all original legs exercises from exerciseLibrary, switched to unified primaryMuscleGroup "Legs"
+  let unifiedLegsLibrary : [Exercise] = [
+    { name = "Barbell Squats"; primaryMuscleGroup = "Legs"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/barbell-squat"; recoveryTime = 72 },
+    { name = "Romanian Deadlifts"; primaryMuscleGroup = "Legs"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/romanian-deadlift"; recoveryTime = 72 },
+    { name = "Bulgarian Split Squats"; primaryMuscleGroup = "Legs"; equipmentType = "Dumbbell"; demoUrl = "https://www.muscleandstrength.com/exercises/bulgarian-split-squat"; recoveryTime = 72 },
+    { name = "Leg Curls"; primaryMuscleGroup = "Legs"; equipmentType = "Machine"; demoUrl = "https://www.muscleandstrength.com/exercises/leg-curl"; recoveryTime = 72 },
+    { name = "Leg Extensions"; primaryMuscleGroup = "Legs"; equipmentType = "Machine"; demoUrl = "https://www.muscleandstrength.com/exercises/leg-extension"; recoveryTime = 72 },
+    { name = "Hip Thrusts"; primaryMuscleGroup = "Legs"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/barbell-hip-thrust"; recoveryTime = 72 },
+    { name = "Glute Bridges"; primaryMuscleGroup = "Legs"; equipmentType = "Bodyweight"; demoUrl = "https://www.muscleandstrength.com/exercises/glute-bridge"; recoveryTime = 72 },
+    { name = "Standing Calf Raises"; primaryMuscleGroup = "Legs"; equipmentType = "Machine"; demoUrl = "https://www.muscleandstrength.com/exercises/standing-calf-raise"; recoveryTime = 72 },
+    { name = "Seated Calf Raises"; primaryMuscleGroup = "Legs"; equipmentType = "Machine"; demoUrl = "https://www.muscleandstrength.com/exercises/seated-calf-raise"; recoveryTime = 72 },
+    { name = "Goblet Squats"; primaryMuscleGroup = "Legs"; equipmentType = "Dumbbell"; demoUrl = "https://www.muscleandstrength.com/exercises/goblet-squat"; recoveryTime = 72 },
+    { name = "Walking Lunges"; primaryMuscleGroup = "Legs"; equipmentType = "Dumbbell"; demoUrl = "https://www.muscleandstrength.com/exercises/walking-lunge"; recoveryTime = 72 },
+    { name = "Stiff-Leg Deadlifts"; primaryMuscleGroup = "Legs"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/stiff-leg-deadlift"; recoveryTime = 72 },
+    { name = "Good Mornings"; primaryMuscleGroup = "Legs"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/good-morning"; recoveryTime = 72 },
+    { name = "Cable Kickbacks"; primaryMuscleGroup = "Legs"; equipmentType = "Cable"; demoUrl = "https://www.muscleandstrength.com/exercises/cable-glute-kickback"; recoveryTime = 72 },
+    { name = "Sumo Deadlifts"; primaryMuscleGroup = "Legs"; equipmentType = "Barbell"; demoUrl = "https://www.muscleandstrength.com/exercises/sumo-deadlift"; recoveryTime = 72 },
+    { name = "Donkey Calf Raises"; primaryMuscleGroup = "Legs"; equipmentType = "Machine"; demoUrl = "https://www.muscleandstrength.com/exercises/donkey-calf-raise"; recoveryTime = 72 },
+    { name = "Single-Leg Calf Raises"; primaryMuscleGroup = "Legs"; equipmentType = "Bodyweight"; demoUrl = "https://www.muscleandstrength.com/exercises/single-leg-calf-raise"; recoveryTime = 72 },
+  ];
+
+  // Switch for unified legs -> leave inactive for now, will be migrated to hardcoded true in update3-2-3
+  let useUnifiedLegs = false;
 
   var shuffleCounter : Nat = 0;
   let TEST_RECOVERY_MODE = true;
@@ -847,4 +870,3 @@ actor {
     };
   };
 };
-

@@ -1,39 +1,25 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-20T22:09:34.063Z",
+  "generatedAt": "2026-02-25T23:40:48.189Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 2,
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-5",
-        "summary": "In buildShuffledSectionFromArray function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
+        "id": "REQ-10",
+        "summary": "Add a simple boolean toggle variable `let useUnifiedLegs = false;` to backend/main.mo positioned after the `unifiedLegsLibrary` array declaration. This variable serves as a future migration switch — when set to true it will indicate that workout generation should use `unifiedLegsLibrary` instead of the existing library for leg exercises. For this version it must remain false and must not be referenced by any existing functions.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-6",
-        "summary": "In buildShuffledSectionFromArrayWithLimit function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-7",
-        "summary": "In the adjustRecoveryForTestMode function in backend/main.mo, change the line 'let fullyRecoveredTime = 0;' to 'let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);' to force 100% recovery status for all muscle groups when TEST_RECOVERY_MODE = true",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-8",
-        "summary": "After deployment, verify that both fixes are present in the deployed backend code: confirm Text.toLowercase is used in both filter functions and fullyRecoveredTime uses the negative offset calculation",
+        "id": "REQ-9",
+        "summary": "Add a new array `unifiedLegsLibrary : [Exercise]` to backend/main.mo positioned AFTER the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with primaryMuscleGroup = \"Legs\" and recoveryTime = 72: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Each entry must include the corresponding demoUrl from muscleandstrength.com as specified by the user. Do NOT modify or delete the existing `exerciseLibrary` array or any other existing arrays, types, or functions.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
@@ -43,6 +29,8 @@
   "changedFiles": [
     "backend/main.mo",
     "build-request.json",
+    "build-template/README.md",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",

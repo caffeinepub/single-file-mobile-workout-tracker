@@ -1,93 +1,65 @@
 {
   "kind": "build_request",
-  "title": "Fix filter syntax and force full recovery in test mode (Version 367)",
-  "projectName": "FitTrack",
-  "priority": "high",
+  "title": "Version 375 - Add unifiedLegsLibrary and useUnifiedLegs toggle (no existing code changes)",
+  "projectName": "Gym Tracker",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-5",
-      "text": "In buildShuffledSectionFromArray function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
+      "id": "REQ-9",
+      "text": "Add a new array `unifiedLegsLibrary : [Exercise]` to backend/main.mo positioned AFTER the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with primaryMuscleGroup = \"Legs\" and recoveryTime = 72: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Each entry must include the corresponding demoUrl from muscleandstrength.com as specified by the user. Do NOT modify or delete the existing `exerciseLibrary` array or any other existing arrays, types, or functions.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-latest"
         ],
         "quotes": [
-          "Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())",
-          "Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))"
+          "Add this new array AFTER the existing exerciseLibrary",
+          "Do NOT change or delete ANY existing code or arrays. Do NOT modify exerciseLibrary."
         ]
       },
       "acceptanceCriteria": [
-        "The filter in buildShuffledSectionFromArray uses Text.toLowercase() function instead of .toLower() method",
-        "Deployed code can be read and verified to contain 'Text.toLowercase(e.primaryMuscleGroup)' in the filter"
+        "The `unifiedLegsLibrary` array is present in main.mo after the existing `exerciseLibrary` declaration",
+        "The array contains exactly 17 exercises, all with primaryMuscleGroup = \"Legs\" and recoveryTime = 72",
+        "All demoUrl values match the muscleandstrength.com URLs specified by the user",
+        "The existing `exerciseLibrary` array and all other existing code remain completely unchanged",
+        "The backend compiles without errors"
       ]
     },
     {
-      "id": "REQ-6",
-      "text": "In buildShuffledSectionFromArrayWithLimit function in backend/main.mo, replace the invalid filter syntax 'Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())' with 'Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))' to fix the muscle group filtering that is currently returning empty arrays for leg exercises",
+      "id": "REQ-10",
+      "text": "Add a simple boolean toggle variable `let useUnifiedLegs = false;` to backend/main.mo positioned after the `unifiedLegsLibrary` array declaration. This variable serves as a future migration switch — when set to true it will indicate that workout generation should use `unifiedLegsLibrary` instead of the existing library for leg exercises. For this version it must remain false and must not be referenced by any existing functions.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-latest"
         ],
         "quotes": [
-          "Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())",
-          "Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))"
+          "Add a simple toggle variable AFTER exerciseLibrary: let useUnifiedLegs = false;  // change to true later to switch generation to unifiedLegsLibrary",
+          "Do NOTHING else. No changes to recovery, no changes to generation functions, no syntax fixes yet."
         ]
       },
       "acceptanceCriteria": [
-        "The filter in buildShuffledSectionFromArrayWithLimit uses Text.toLowercase() function instead of .toLower() method",
-        "Deployed code can be read and verified to contain 'Text.toLowercase(e.primaryMuscleGroup)' in the filter"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "In the adjustRecoveryForTestMode function in backend/main.mo, change the line 'let fullyRecoveredTime = 0;' to 'let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);' to force 100% recovery status for all muscle groups when TEST_RECOVERY_MODE = true",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "let fullyRecoveredTime = 0;",
-          "let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The adjustRecoveryForTestMode function sets fullyRecoveredTime using a negative offset calculation",
-        "Deployed code can be read and verified to contain 'fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)'",
-        "TEST_RECOVERY_MODE remains set to true"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "After deployment, verify that both fixes are present in the deployed backend code: confirm Text.toLowercase is used in both filter functions and fullyRecoveredTime uses the negative offset calculation",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "read the deployed code and confirm both fixes are present"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Deployed main.mo file contains 'Text.toLowercase(e.primaryMuscleGroup)' in buildShuffledSectionFromArray",
-        "Deployed main.mo file contains 'Text.toLowercase(e.primaryMuscleGroup)' in buildShuffledSectionFromArrayWithLimit",
-        "Deployed main.mo file contains 'fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)' in adjustRecoveryForTestMode"
+        "The variable `let useUnifiedLegs = false;` is declared in main.mo after the `unifiedLegsLibrary` array",
+        "No existing functions reference or use this variable",
+        "No other code is modified as part of adding this toggle",
+        "The backend compiles without errors"
       ]
     }
   ],
   "constraints": [
-    "Keep TEST_RECOVERY_MODE = true",
-    "Do not change anything else in main.mo beyond the two specified fixes",
-    "Build as Version 367"
+    "Do NOT modify, delete, or reorder the existing exerciseLibrary array or any of its entries",
+    "Do NOT change any existing types, functions, or variables",
+    "Do NOT fix any existing syntax issues (Text.toLowercase, filter bugs, etc.) in this version",
+    "Do NOT modify recovery logic or TEST_RECOVERY_MODE behavior",
+    "The useUnifiedLegs toggle must be false and must not be wired into any function in this version",
+    "No frontend changes required"
   ],
   "nonGoals": [
-    "Refactoring other parts of the codebase",
-    "Changing the recovery calculation logic beyond the test mode adjustment",
-    "Modifying frontend components",
-    "Adding new features or functionality"
+    "Wiring useUnifiedLegs into workout generation functions",
+    "Fixing existing filter syntax bugs (Text.toLower vs Text.toLowercase)",
+    "Migrating existing leg exercises to the new unified group",
+    "Modifying RecoveryState types or recovery calculation logic",
+    "Any frontend changes"
   ],
   "imageRequirements": {
     "required": [],

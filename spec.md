@@ -1,12 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Fix backend syntax errors causing empty leg exercise arrays and ensure full recovery in test mode.
+**Goal:** Add a new `unifiedLegsLibrary` array and a `useUnifiedLegs` toggle to the backend without touching any existing code.
 
 **Planned changes:**
-- Replace invalid `.toLower()` method with `Text.toLowercase()` function in `buildShuffledSectionFromArray` filter
-- Replace invalid `.toLower()` method with `Text.toLowercase()` function in `buildShuffledSectionFromArrayWithLimit` filter
-- Change `fullyRecoveredTime` calculation in `adjustRecoveryForTestMode` to use negative offset `0 - (100 * 3_600_000_000_000)` to force 100% recovery
-- Verify all three fixes are present in deployed code
+- Add a new `unifiedLegsLibrary : [Exercise]` array in `backend/main.mo` positioned after the existing `exerciseLibrary` array, containing exactly 17 leg exercises (all with `primaryMuscleGroup = "Legs"` and `recoveryTime = 72`), each with the corresponding `demoUrl` from muscleandstrength.com
+- Add a boolean toggle variable `let useUnifiedLegs = false;` in `backend/main.mo` after the `unifiedLegsLibrary` array declaration, not referenced by any existing functions
 
-**User-visible outcome:** Leg exercises will populate correctly in workout builder, and all muscle groups will show 100% recovery status in test mode.
+**User-visible outcome:** No visible frontend changes. The backend gains a new exercise library array and a migration toggle variable for future use, while all existing functionality remains unchanged.
