@@ -1,25 +1,46 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T23:40:48.189Z",
+  "generatedAt": "2026-02-26T01:11:03.687Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
+    "total": 5,
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-10",
-        "summary": "Add a simple boolean toggle variable `let useUnifiedLegs = false;` to backend/main.mo positioned after the `unifiedLegsLibrary` array declaration. This variable serves as a future migration switch — when set to true it will indicate that workout generation should use `unifiedLegsLibrary` instead of the existing library for leg exercises. For this version it must remain false and must not be referenced by any existing functions.",
+        "id": "REQ-11",
+        "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-9",
-        "summary": "Add a new array `unifiedLegsLibrary : [Exercise]` to backend/main.mo positioned AFTER the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with primaryMuscleGroup = \"Legs\" and recoveryTime = 72: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Each entry must include the corresponding demoUrl from muscleandstrength.com as specified by the user. Do NOT modify or delete the existing `exerciseLibrary` array or any other existing arrays, types, or functions.",
+        "id": "REQ-12",
+        "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArrayWithLimit` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-13",
+        "summary": "In backend/main.mo, in the `adjustRecoveryForTestMode` function, change the line `let fullyRecoveredTime = 0;` to `let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` so that TEST_RECOVERY_MODE forces 100% recovery for all muscle groups.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-14",
+        "summary": "In backend/main.mo, add a `unifiedLegsLibrary : [Exercise]` array positioned immediately after the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with `primaryMuscleGroup = \"Legs\"` and `recoveryTime = 72`: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Do NOT modify or delete the existing `exerciseLibrary` array or any other arrays, types, or functions.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-15",
+        "summary": "In backend/main.mo, add the boolean toggle `let useUnifiedLegs = false;` immediately after the `unifiedLegsLibrary` array declaration. This variable must remain `false` and must not be referenced or used by any existing functions in this version.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
@@ -27,10 +48,7 @@
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
-    "build-template/README.md",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",

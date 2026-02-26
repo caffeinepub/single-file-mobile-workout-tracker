@@ -1,10 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add a new `unifiedLegsLibrary` array and a `useUnifiedLegs` toggle to the backend without touching any existing code.
+**Goal:** Fix two Motoko filter syntax errors, fix the recovery test mode logic, and add a new `unifiedLegsLibrary` array with a disabled toggle to the backend.
 
 **Planned changes:**
-- Add a new `unifiedLegsLibrary : [Exercise]` array in `backend/main.mo` positioned after the existing `exerciseLibrary` array, containing exactly 17 leg exercises (all with `primaryMuscleGroup = "Legs"` and `recoveryTime = 72`), each with the corresponding `demoUrl` from muscleandstrength.com
-- Add a boolean toggle variable `let useUnifiedLegs = false;` in `backend/main.mo` after the `unifiedLegsLibrary` array declaration, not referenced by any existing functions
+- In `buildShuffledSectionFromArray`, replace `.toLower()` method calls with `Text.toLowercase()` for muscle group comparison
+- In `buildShuffledSectionFromArrayWithLimit`, replace `.toLower()` method calls with `Text.toLowercase()` for muscle group comparison
+- In `adjustRecoveryForTestMode`, change `fullyRecoveredTime = 0` to `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)` so test mode forces 100% recovery
+- Add `unifiedLegsLibrary` array with 17 leg exercises (all with `primaryMuscleGroup = "Legs"` and `recoveryTime = 72`) positioned after the existing `exerciseLibrary`
+- Add `let useUnifiedLegs = false;` toggle immediately after `unifiedLegsLibrary` (not wired into any existing functions)
 
-**User-visible outcome:** No visible frontend changes. The backend gains a new exercise library array and a migration toggle variable for future use, while all existing functionality remains unchanged.
+**User-visible outcome:** The backend compiles without filter syntax errors, test recovery mode correctly forces full recovery for all muscle groups, and a new legs exercise library is staged for future use.

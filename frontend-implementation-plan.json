@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Version 375 - Frontend Implementation Plan (No Changes Required)",
+  "title": "Fix Motoko filter syntax, add unifiedLegsLibrary, and fix recovery test mode",
   "requirements": []
 }

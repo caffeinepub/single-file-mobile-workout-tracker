@@ -1,65 +1,106 @@
 {
   "kind": "build_request",
-  "title": "Version 375 - Add unifiedLegsLibrary and useUnifiedLegs toggle (no existing code changes)",
-  "projectName": "Gym Tracker",
-  "priority": "normal",
+  "title": "Fix Motoko filter syntax, add unifiedLegsLibrary, and fix recovery test mode",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-9",
-      "text": "Add a new array `unifiedLegsLibrary : [Exercise]` to backend/main.mo positioned AFTER the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with primaryMuscleGroup = \"Legs\" and recoveryTime = 72: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Each entry must include the corresponding demoUrl from muscleandstrength.com as specified by the user. Do NOT modify or delete the existing `exerciseLibrary` array or any other existing arrays, types, or functions.",
+      "id": "REQ-11",
+      "text": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
         ],
         "quotes": [
-          "Add this new array AFTER the existing exerciseLibrary",
-          "Do NOT change or delete ANY existing code or arrays. Do NOT modify exerciseLibrary."
+          "Fix filter syntax in buildShuffledSectionFromArray and buildShuffledSectionFromArrayWithLimit"
         ]
       },
       "acceptanceCriteria": [
-        "The `unifiedLegsLibrary` array is present in main.mo after the existing `exerciseLibrary` declaration",
-        "The array contains exactly 17 exercises, all with primaryMuscleGroup = \"Legs\" and recoveryTime = 72",
-        "All demoUrl values match the muscleandstrength.com URLs specified by the user",
-        "The existing `exerciseLibrary` array and all other existing code remain completely unchanged",
-        "The backend compiles without errors"
+        "`buildShuffledSectionFromArray` uses `Text.toLowercase()` (not `.toLower()`) for muscle group comparison",
+        "No `.toLower()` call exists in the function body"
       ]
     },
     {
-      "id": "REQ-10",
-      "text": "Add a simple boolean toggle variable `let useUnifiedLegs = false;` to backend/main.mo positioned after the `unifiedLegsLibrary` array declaration. This variable serves as a future migration switch — when set to true it will indicate that workout generation should use `unifiedLegsLibrary` instead of the existing library for leg exercises. For this version it must remain false and must not be referenced by any existing functions.",
+      "id": "REQ-12",
+      "text": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArrayWithLimit` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-recent"
         ],
         "quotes": [
-          "Add a simple toggle variable AFTER exerciseLibrary: let useUnifiedLegs = false;  // change to true later to switch generation to unifiedLegsLibrary",
-          "Do NOTHING else. No changes to recovery, no changes to generation functions, no syntax fixes yet."
+          "Fix filter syntax in buildShuffledSectionFromArray and buildShuffledSectionFromArrayWithLimit"
         ]
       },
       "acceptanceCriteria": [
-        "The variable `let useUnifiedLegs = false;` is declared in main.mo after the `unifiedLegsLibrary` array",
-        "No existing functions reference or use this variable",
-        "No other code is modified as part of adding this toggle",
-        "The backend compiles without errors"
+        "`buildShuffledSectionFromArrayWithLimit` uses `Text.toLowercase()` (not `.toLower()`) for muscle group comparison",
+        "No `.toLower()` call exists in the function body"
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "In backend/main.mo, in the `adjustRecoveryForTestMode` function, change the line `let fullyRecoveredTime = 0;` to `let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` so that TEST_RECOVERY_MODE forces 100% recovery for all muscle groups.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Fix adjustRecoveryForTestMode → fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`adjustRecoveryForTestMode` sets `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)`",
+        "The old `fullyRecoveredTime = 0` assignment is removed"
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "In backend/main.mo, add a `unifiedLegsLibrary : [Exercise]` array positioned immediately after the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with `primaryMuscleGroup = \"Legs\"` and `recoveryTime = 72`: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Do NOT modify or delete the existing `exerciseLibrary` array or any other arrays, types, or functions.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Add unifiedLegsLibrary array (17 exercises all with primaryMuscleGroup='Legs') and useUnifiedLegs=false toggle"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`unifiedLegsLibrary` is present in main.mo after `exerciseLibrary`",
+        "All 17 exercises have `primaryMuscleGroup = \"Legs\"` and `recoveryTime = 72`",
+        "Existing `exerciseLibrary` is unchanged"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "In backend/main.mo, add the boolean toggle `let useUnifiedLegs = false;` immediately after the `unifiedLegsLibrary` array declaration. This variable must remain `false` and must not be referenced or used by any existing functions in this version.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-recent"
+        ],
+        "quotes": [
+          "Add useUnifiedLegs=false toggle"
+        ]
+      },
+      "acceptanceCriteria": [
+        "`let useUnifiedLegs = false;` is present in main.mo after `unifiedLegsLibrary`",
+        "No existing function references `useUnifiedLegs`"
       ]
     }
   ],
   "constraints": [
-    "Do NOT modify, delete, or reorder the existing exerciseLibrary array or any of its entries",
-    "Do NOT change any existing types, functions, or variables",
-    "Do NOT fix any existing syntax issues (Text.toLowercase, filter bugs, etc.) in this version",
-    "Do NOT modify recovery logic or TEST_RECOVERY_MODE behavior",
-    "The useUnifiedLegs toggle must be false and must not be wired into any function in this version",
-    "No frontend changes required"
+    "Do not modify any existing arrays, types, or functions beyond the two filter lines and the one recovery line specified",
+    "Do not refactor workout generation logic or any other backend flow",
+    "unifiedLegsLibrary must be additive only — no existing code removed"
   ],
   "nonGoals": [
-    "Wiring useUnifiedLegs into workout generation functions",
-    "Fixing existing filter syntax bugs (Text.toLower vs Text.toLowercase)",
-    "Migrating existing leg exercises to the new unified group",
-    "Modifying RecoveryState types or recovery calculation logic",
-    "Any frontend changes"
+    "Wiring useUnifiedLegs toggle into workout generation (future build)",
+    "Frontend changes",
+    "Switching imports from mo:core to mo:base",
+    "Fixing uniqueByName or other known bugs not listed in requirements",
+    "Removing TEST_RECOVERY_MODE flag"
   ],
   "imageRequirements": {
     "required": [],
