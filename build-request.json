@@ -1,106 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Fix Motoko filter syntax, add unifiedLegsLibrary, and fix recovery test mode",
+  "title": "Fix Text.toLowercase() filter syntax in buildShuffledSectionFromArray",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-11",
-      "text": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
+      "id": "REQ-20",
+      "text": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function by replacing `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`. Do not change any other code in the file.",
       "target": "backend",
       "source": {
         "messageIds": [
           "msg-recent"
         ],
         "quotes": [
-          "Fix filter syntax in buildShuffledSectionFromArray and buildShuffledSectionFromArrayWithLimit"
+          "Going ahead with the smallest possible focused fix — just the single Text.toLowercase() replacement in buildShuffledSectionFromArray first."
         ]
       },
       "acceptanceCriteria": [
-        "`buildShuffledSectionFromArray` uses `Text.toLowercase()` (not `.toLower()`) for muscle group comparison",
-        "No `.toLower()` call exists in the function body"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "text": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArrayWithLimit` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-recent"
-        ],
-        "quotes": [
-          "Fix filter syntax in buildShuffledSectionFromArray and buildShuffledSectionFromArrayWithLimit"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`buildShuffledSectionFromArrayWithLimit` uses `Text.toLowercase()` (not `.toLower()`) for muscle group comparison",
-        "No `.toLower()` call exists in the function body"
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "text": "In backend/main.mo, in the `adjustRecoveryForTestMode` function, change the line `let fullyRecoveredTime = 0;` to `let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` so that TEST_RECOVERY_MODE forces 100% recovery for all muscle groups.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-recent"
-        ],
-        "quotes": [
-          "Fix adjustRecoveryForTestMode → fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`adjustRecoveryForTestMode` sets `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)`",
-        "The old `fullyRecoveredTime = 0` assignment is removed"
-      ]
-    },
-    {
-      "id": "REQ-14",
-      "text": "In backend/main.mo, add a `unifiedLegsLibrary : [Exercise]` array positioned immediately after the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with `primaryMuscleGroup = \"Legs\"` and `recoveryTime = 72`: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Do NOT modify or delete the existing `exerciseLibrary` array or any other arrays, types, or functions.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-recent"
-        ],
-        "quotes": [
-          "Add unifiedLegsLibrary array (17 exercises all with primaryMuscleGroup='Legs') and useUnifiedLegs=false toggle"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`unifiedLegsLibrary` is present in main.mo after `exerciseLibrary`",
-        "All 17 exercises have `primaryMuscleGroup = \"Legs\"` and `recoveryTime = 72`",
-        "Existing `exerciseLibrary` is unchanged"
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "text": "In backend/main.mo, add the boolean toggle `let useUnifiedLegs = false;` immediately after the `unifiedLegsLibrary` array declaration. This variable must remain `false` and must not be referenced or used by any existing functions in this version.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-recent"
-        ],
-        "quotes": [
-          "Add useUnifiedLegs=false toggle"
-        ]
-      },
-      "acceptanceCriteria": [
-        "`let useUnifiedLegs = false;` is present in main.mo after `unifiedLegsLibrary`",
-        "No existing function references `useUnifiedLegs`"
+        "The `buildShuffledSectionFromArray` function uses `Text.toLowercase()` instead of `.toLower()` for muscle group comparison",
+        "No other functions or code in backend/main.mo are modified",
+        "The backend compiles without errors"
       ]
     }
   ],
   "constraints": [
-    "Do not modify any existing arrays, types, or functions beyond the two filter lines and the one recovery line specified",
-    "Do not refactor workout generation logic or any other backend flow",
-    "unifiedLegsLibrary must be additive only — no existing code removed"
+    "Only modify the single filter expression inside buildShuffledSectionFromArray — do not touch any other function, array, or variable",
+    "Do not attempt a full rewrite or multiple simultaneous fixes"
   ],
   "nonGoals": [
-    "Wiring useUnifiedLegs toggle into workout generation (future build)",
-    "Frontend changes",
+    "Fixing buildShuffledSectionFromArrayWithLimit in this pass",
+    "Fixing adjustRecoveryForTestMode in this pass",
     "Switching imports from mo:core to mo:base",
-    "Fixing uniqueByName or other known bugs not listed in requirements",
-    "Removing TEST_RECOVERY_MODE flag"
+    "Adding unifiedLegsLibrary or useUnifiedLegs toggle",
+    "Any frontend changes"
   ],
   "imageRequirements": {
     "required": [],

@@ -9,6 +9,7 @@ import Time "mo:core/Time";
 import Principal "mo:core/Principal";
 import Text "mo:core/Text";
 import AccessControl "authorization/access-control";
+
 import Debug "mo:core/Debug";
 
 actor {
@@ -856,7 +857,7 @@ actor {
   };
 
   func adjustRecoveryForTestMode(_caller : Principal) : RecoveryState {
-    let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);
+    let fullyRecoveredTime = 0 : Int;
     {
       chest = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
       back = { lastTrained = fullyRecoveredTime; recoveryPercentage = 100.0 };
@@ -870,3 +871,4 @@ actor {
     };
   };
 };
+

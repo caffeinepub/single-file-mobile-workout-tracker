@@ -1,6 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Motoko filter syntax, add unifiedLegsLibrary, and fix recovery test mode",
+  "title": "Fix Text.toLowercase() filter syntax in buildShuffledSectionFromArray",
   "requirements": []
 }

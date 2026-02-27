@@ -1,53 +1,22 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T01:11:03.682Z",
-  "summary": "The diff only shows changes to project_state.json (a metadata/tracking file), not to backend/main.mo. All five requirements (REQ-11 through REQ-15) require modifications to backend/main.mo, but no such file appears in the diff. The project_state.json itself describes these fixes as 'NOT present in deployed code' and lists them as 'pending', confirming none of the requirements have been implemented.",
+  "generatedAt": "2026-02-27T19:55:10.879Z",
+  "summary": "The diff modifies backend/main.mo and project_state.json. The diff of backend/main.mo is truncated and does not show the actual change inside buildShuffledSectionFromArray. Without visible evidence of the filter expression being updated from Text.equal(e.primaryMuscleGroup.toLower(), group.toLower()) to Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group)), REQ-20 cannot be confirmed as implemented.",
   "missing_requirements": [
     {
-      "id": "REQ-11",
-      "requirement": "Fix invalid filter syntax in `buildShuffledSectionFromArray` to use `Text.toLowercase()` instead of `.toLower()`.",
-      "reason": "No changes to backend/main.mo are present in the diff. The project_state.json explicitly states these fixes are NOT present in deployed code.",
+      "id": "REQ-20",
+      "requirement": "In backend/main.mo, fix the invalid filter syntax in the buildShuffledSectionFromArray function by replacing Text.equal(e.primaryMuscleGroup.toLower(), group.toLower()) with Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group)).",
+      "reason": "The diff of backend/main.mo is truncated and the buildShuffledSectionFromArray function body — specifically the filter expression — is not visible in the provided content. There is no direct evidence that the required substitution was made.",
       "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "requirement": "Fix invalid filter syntax in `buildShuffledSectionFromArrayWithLimit` to use `Text.toLowercase()` instead of `.toLower()`.",
-      "reason": "No changes to backend/main.mo are present in the diff. The project_state.json explicitly states these fixes are NOT present in deployed code.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "requirement": "In `adjustRecoveryForTestMode`, change `fullyRecoveredTime = 0` to `fullyRecoveredTime = 0 - (100 * 3_600_000_000_000)`.",
-      "reason": "No changes to backend/main.mo are present in the diff. The project_state.json explicitly states these fixes are NOT present in deployed code.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-14",
-      "requirement": "Add `unifiedLegsLibrary : [Exercise]` array with 17 exercises after `exerciseLibrary` in backend/main.mo.",
-      "reason": "No changes to backend/main.mo are present in the diff. The project_state.json explicitly states unifiedLegsLibrary is NOT present in deployed code.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "requirement": "Add `let useUnifiedLegs = false;` immediately after the `unifiedLegsLibrary` array declaration in backend/main.mo.",
-      "reason": "No changes to backend/main.mo are present in the diff. The project_state.json explicitly states the useUnifiedLegs toggle is NOT present in deployed code.",
-      "evidence": [
-        "project_state.json"
+        "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [],
-  "confidence": 0.97,
+  "confidence": 0.45,
   "changed_files": [
+    "backend/main.mo",
     "project_state.json"
   ]
 }

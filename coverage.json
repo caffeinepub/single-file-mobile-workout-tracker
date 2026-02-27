@@ -1,46 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T01:11:03.687Z",
+  "generatedAt": "2026-02-27T19:55:10.881Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
+    "total": 1,
     "implemented": 0,
     "items": [
       {
-        "id": "REQ-11",
-        "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-12",
-        "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArrayWithLimit` function: replace `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-13",
-        "summary": "In backend/main.mo, in the `adjustRecoveryForTestMode` function, change the line `let fullyRecoveredTime = 0;` to `let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` so that TEST_RECOVERY_MODE forces 100% recovery for all muscle groups.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-14",
-        "summary": "In backend/main.mo, add a `unifiedLegsLibrary : [Exercise]` array positioned immediately after the existing `exerciseLibrary` array. The array must contain exactly these 17 exercises, all with `primaryMuscleGroup = \"Legs\"` and `recoveryTime = 72`: Barbell Squats (Barbell), Romanian Deadlifts (Barbell), Bulgarian Split Squats (Dumbbell), Leg Curls (Machine), Leg Extensions (Machine), Hip Thrusts (Barbell), Glute Bridges (Bodyweight), Standing Calf Raises (Machine), Seated Calf Raises (Machine), Goblet Squats (Dumbbell), Walking Lunges (Dumbbell), Stiff-Leg Deadlifts (Barbell), Good Mornings (Barbell), Cable Kickbacks (Cable), Sumo Deadlifts (Barbell), Donkey Calf Raises (Machine), Single-Leg Calf Raises (Bodyweight). Do NOT modify or delete the existing `exerciseLibrary` array or any other arrays, types, or functions.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-15",
-        "summary": "In backend/main.mo, add the boolean toggle `let useUnifiedLegs = false;` immediately after the `unifiedLegsLibrary` array declaration. This variable must remain `false` and must not be referenced or used by any existing functions in this version.",
+        "id": "REQ-20",
+        "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function by replacing `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`. Do not change any other code in the file.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
@@ -48,6 +20,7 @@
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-implementation-plan.json",

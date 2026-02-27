@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
-  "summary": "Workout Generator backend: multiple deployment attempts (v368-375) confirmed to have failed silently — live canister still on broken state (v367 or earlier); unifiedLegsLibrary, useUnifiedLegs toggle, and Text.toLowercase fixes are NOT present in deployed code; new attempt (retry build) underway with four targeted fixes: fix .toLower() → Text.toLowercase() in both filter functions, add unifiedLegsLibrary (17 exercises), add useUnifiedLegs=false toggle, fix adjustRecoveryForTestMode fullyRecoveredTime offset.",
+  "projectStateVersion": 21,
+  "summary": "Workout Generator backend: 'Failed to generate workout' and Upper Body showing only Legs exercises confirmed as active bugs. Multiple repair attempts (v370+) continue to fail — AI build system unable to handle surgical edits or full rewrites. Now attempting smallest possible single fix: Text.toLowercase() in buildShuffledSectionFromArray only. Platform deployment pipeline remains unreliable.",
   "architectural_notes": [
     "Backend is Motoko (main.mo) with exercise library + workout generation (generateFullBodyWorkout), recovery state gating, and helpers (buildShuffledSectionFromArrayWithLimit, uniqueByName, calculateRecoveryPercentage).",
     "LegSubgroupRecovery type includes 'legs' field as composite/aggregate recovery value (min/avg of quads/hamstrings/glutes/calves) for dashboard summaries",
@@ -18,7 +18,8 @@
     "No preupgrade/postupgrade hooks → persistence unsafe",
     "Hard-coded magic numbers (3_600_000_000_000, recovery thresholds) should be named constants",
     "Filter syntax bug: buildShuffledSectionFromArray(WithLimit) uses .toLower() method (invalid in Motoko) instead of Text.toLowercase() function → silent failure, returns empty arrays for leg exercises",
-    "TEST_RECOVERY_MODE uses fullyRecoveredTime = 0 (epoch) which may not force 100% recovery; should use negative offset (0 - 100*3_600_000_000_000) to guarantee full recovery state"
+    "TEST_RECOVERY_MODE uses fullyRecoveredTime = 0 (epoch) which may not force 100% recovery; should use negative offset (0 - 100*3_600_000_000_000) to guarantee full recovery state",
+    "Upper Body workout returns only Legs exercises — confirmed symptom of silent filter failure due to .toLower() invalid syntax"
   ],
   "isFixRequest": true,
   "existing_features": [],
@@ -136,6 +137,46 @@
       "summary": "In backend/main.mo, add the boolean toggle `let useUnifiedLegs = false;` immediately after the `unifiedLegsLibrary` array declaration. This variable must remain `false` and must not be referenced or used by any existing functions in this version.",
       "reqIds": [
         "REQ-15"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function by replacing `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`. This is the primary cause of empty exercise arrays and the 'Failed to generate workout' error.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArrayWithLimit` function by replacing `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "In backend/main.mo, in the `adjustRecoveryForTestMode` function, change `let fullyRecoveredTime = 0;` to `let fullyRecoveredTime = 0 - (100 * 3_600_000_000_000);` so that TEST_RECOVERY_MODE forces 100% recovery for all muscle groups.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "In backend/main.mo, ensure all imports use `mo:base/*` instead of `mo:core/*` (e.g., `mo:base/Text`, `mo:base/Array`, `mo:base/Int`, etc.) to ensure compatibility with the IC production environment and prevent build failures.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "In backend/main.mo, fix the invalid filter syntax in the `buildShuffledSectionFromArray` function by replacing `Text.equal(e.primaryMuscleGroup.toLower(), group.toLower())` with `Text.equal(Text.toLowercase(e.primaryMuscleGroup), Text.toLowercase(group))`. Do not change any other code in the file.",
+      "reqIds": [
+        "REQ-20"
       ],
       "status": "pending"
     }
